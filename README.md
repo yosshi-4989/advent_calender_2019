@@ -12,9 +12,9 @@
 
 1. [構築環境](#構築環境)
 1. [Node.jsインストール](#Node.jsインストール)
-1. [Ionic CLIインストール](#Ionic CLIインストール)
+1. [Ionic CLIインストール](#Ionic-CLIインストール)
 1. [Gitインストール](#Gitインストール)
-1. [Visual Studio Codeインストール](#Visual Studio Codeインストール)
+1. [Visual Studio Codeインストール](#Visual-Studio-Codeインストール)
 1. [サンプルプロジェクトを作ってみる](#サンプルプロジェクトを作ってみる)
 1. [おわりに](#おわりに)
 1. [TIPS](#TIPS)
@@ -71,7 +71,7 @@ IDE/エディタは無料かつIonicの開発をサポートできるのでVSCod
 そしてVSCodeのインストールが終わったら起動してIonic開発をサポートする拡張機能をインストールする。
 下記画像の赤枠のボタンを押して検索窓に「Angular Language Service」と入力すると、黄枠の拡張機能が表示されるので、インストールする。
 
-[Angular拡張機能](https://github.com/yosshi-4989/advent_calender_2019/blob/images/Angular%E6%8B%A1%E5%BC%B5%E6%A9%9F%E8%83%BD.png)
+![Angular拡張機能](https://github.com/yosshi-4989/advent_calender_2019/blob/images/Angular%E6%8B%A1%E5%BC%B5%E6%A9%9F%E8%83%BD.png)
 
 以上で環境構築終わり。
 
@@ -105,7 +105,7 @@ IDE/エディタは無料かつIonicの開発をサポートできるのでVSCod
 > ionic serve
 ```
 
-[Ionicアプリ起動](https://github.com/yosshi-4989/advent_calender_2019/blob/images/run-first-project.png)
+![Ionicアプリ起動](https://github.com/yosshi-4989/advent_calender_2019/blob/images/run-first-project.png)
 
 アプリが起動した！
 
@@ -117,8 +117,9 @@ IDE/エディタは無料かつIonicの開発をサポートできるのでVSCod
 
 ## Tips
 
-- VSCodeでMarkdownを書くときは[Ctrl + k] -> [v]でプレビュー画面が表示できる。
 - WindowsでNode.jsのバージョン管理をしたい場合、[nvm(node version manager)](https://github.com/coreybutler/nvm-windows)というアプリ(ライブラリ？)を使うらしい。
+- VSCodeでMarkdownを書くときは[Ctrl + k] -> [v]でプレビュー画面が表示できる。
+- Markdownでページ内リンクは`[見出し](#見出し)`で`#`は一つ、空白は`-`を利用する
 
 # アドベントカレンダー
 
