@@ -6,38 +6,119 @@
 
 # 本日のコンテキスト
 
-今日は初日なのでざっくりアドベントカレンダーのやり方なんかを記載して終わりにします！
+今日はIonicの環境構築の手順をまとめる！
 
-## 目的
+## 目次
 
-最近、個人開発ができていないので、個人開発を行う動機付け。また、毎日開発をすることでエンジニアとして強くなりたい。
+1. [構築環境](#構築環境)
+1. [Node.jsインストール](#Node.jsインストール)
+1. [Ionic CLIインストール](#Ionic CLIインストール)
+1. [Gitインストール](#Gitインストール)
+1. [Visual Studio Codeインストール](#Visual Studio Codeインストール)
+1. [サンプルプロジェクトを作ってみる](#サンプルプロジェクトを作ってみる)
+1. [おわりに](#おわりに)
+1. [TIPS](#TIPS)
 
-## やりたいこと
+## 構築環境
 
-今回のアドベントカレンダーでやりたいことは、[ionic](https://ionicframework.com/)というフレームワークを使ってWebアプリ開発を行いたい。
-具体的な目標は、以下のことをしたい
+- Git: version 2.17.0.windows.1
+- Node.js: v12.13.1
+- Ionic CLI: ionic@5.4.9
+- エディタ: VSCode
 
-- [Ionic入門書籍](https://www.amazon.co.jp/dp/B081ZN64FM/)を通読(開発にかかる部分のみ)
-- プランニングポーカーの作成
-- 余裕があれば簡単なカードゲーム？
+※Xcode, Android Studioはスマホアプリ用にビルドすることを考えてないのでスキップする。
 
-技術的面では、
+## Node.jsインストール
 
-- Ionic4
-- Firebase
+[Node.jsの公式サイト](https://nodejs.org/ja/)からインストーラをインストールしてインストールする。
+インストール後、以下のコマンドで正しいバージョンが表示されればOK。
 
-を利用して行きたい。
+```
+> node -v
+v12.13.1
+```
 
-## 実施方針
+## Ionic CLIインストール
 
-やったことは基本的にGithubにpushしていこうかなと思ってます。
-日付ごとのブランチ(多分タグでやる)を作成してその日やったことをブランチのREADMEに記載していきます。
+次にIonic CLIをインストールする。
+インストールは以下のコマンドでできる
 
-やらなかった日はスキップして後日埋め合わせする。(無理しない)
+```
+> npm install ionic -g
+> ionic -v
+5.4.9
+```
+
+せっかくなのでnpm installコマンドのオプションについて一部メモ
+
+- "--global(-g)": グローバル領域にインストール。CLIは共通でいいから -g を付けた？
+- "--save(-S)": package.jsonのdependenciesにバージョン付きで追記する。プロジェクトにかかわるパッケージをインストールする場合は必ずつけたほうがいいね。デフォルトでオンになっているとの記述もある…
+
+## Gitインストール
+
+Gitも開発で必要なので入ってない場合は[Gitの公式サイト](https://git-scm.com/download)からインストーラをダウンロードしてインストールする。
+
+```
+> git --version
+git version 2.17.0.windows.1
+```
+
+## Visual Studio Codeインストール
+
+IDE/エディタは無料かつIonicの開発をサポートできるのでVSCode一択。
+[VSCodeの公式サイト](https://code.visualstudio.com/)からインストーラをダウンロードしてインストールする。(こればっかだな)
+
+そしてVSCodeのインストールが終わったら起動してIonic開発をサポートする拡張機能をインストールする。
+下記画像の赤枠のボタンを押して検索窓に「Angular Language Service」と入力すると、黄枠の拡張機能が表示されるので、インストールする。
+
+[Angular拡張機能](https://github.com/yosshi-4989/advent_calender_2019/blob/images/Angular%E6%8B%A1%E5%BC%B5%E6%A9%9F%E8%83%BD.png)
+
+以上で環境構築終わり。
+
+## サンプルプロジェクトを作ってみる
+
+環境構築が終わったのでとりあえずサンプルプロジェクトを作って動くことを確認する。
+※プロジェクト名は明日も利用するために`tasklist-tutorial`にする
+
+```
+> ionic start --type=angular
+? Project name: tasklist-tutorial
+? Starter template:
+  tabs         | A starting project with a simple tabbed interface
+> sidemenu     | A starting project with a side menu with navigation in the content area 
+  blank        | A blank starter project
+  my-first-app | An example application that builds a camera with gallery
+  conference   | A kitchen-sink application that shows off all Ionic has to offer        
+
+[INFO] Next Steps:
+
+       - Go to your newly created project: cd .\tasklist-tutorial
+       - Run ionic serve within the app directory to see your app
+       - Build features and components: https://ion.link/scaffolding-docs
+       - Run your app on a hardware or virtual device: https://ion.link/running-docs
+```
+
+作成が終わったのでサンプルプロジェクトを起動してみる。
+
+```
+> cd ./tasklist-tutorial
+> ionic serve
+```
+
+[Ionicアプリ起動](https://github.com/yosshi-4989/advent_calender_2019/blob/images/run-first-project.png)
+
+アプリが起動した！
 
 ## おわりに
 
-できるだけ続けられるように頑張る！
+今日は環境構築のみでした。
+明日から実際にアプリ開発もどきができるかな。
+チュートリアルだし、そのままというよりかはIonicについてちょっと深堀した内容を記載できるように意識してみようと思いますです。
+
+## Tips
+
+- VSCodeでMarkdownを書くときは[Ctrl + k] -> [v]でプレビュー画面が表示できる。
+- WindowsでNode.jsのバージョン管理をしたい場合、[nvm(node version manager)](https://github.com/coreybutler/nvm-windows)というアプリ(ライブラリ？)を使うらしい。
 
 # アドベントカレンダー
 
