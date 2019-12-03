@@ -10,18 +10,18 @@
 
 ## 目次
 
-1. [Ionicの基本](#Ionicの基本)
+1. [Ionicの画面描画の流れ](#Ionicの画面描画の流れ)
+1. [画面レイアウト](#画面レイアウト)
 1. [タスクリストアプリ作成](#タスクリストアプリ作成)
-1. [](#)
 1. [おわりに](#おわりに)
 
 ## Ionicの画面描画の流れ
 
 Ionicアプリで画面が描画されるまでを追ってみる。
 
-まずは一番おおもとになるHTMLファイルを確認する。
+まずは一番おおもとになるHTMLファイル(`src/index.html`)を確認する。
 
-```html:src/app/index.html
+```html:src/index.html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -44,9 +44,9 @@ bodyタグにある`<app-root>`が横、縦に100%となってこの中にアプ
 +  <app-root>Loading...</app-root>
 ```
 
-次にメインとなるJSファイル。
+次にメインとなるJSファイル(`src/main.ts`)。
 
-```typescript:src/app/main.ts
+```typescript:src/main.ts
 import { enableProdMode } from '@angular/core';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
@@ -63,7 +63,7 @@ platformBrowserDynamic().bootstrapModule(AppModule)
 
 `enableProdMode`は実行環境をproductionモードにするオブジェクトで`platformBrowserDynamic`はアプリとして起動するためのオブジェクト。
 `enableProdMode`を有効にするか確認するために`environment`を読み込んであり、実際に起動するアプリ(モジュール？)を読み込むために`AppModule`を読み込んでいることがわかる。
-※ちなみにここまではAnguarの構造でIonicではないっぽい。
+※ちなみにここまではAngularの構造でIonicではないっぽい。
 
 じゃあ、実際に読み込んでるアプリケーションってなんなの？ってことで`src/app/`配下を見ていく。
 ということで読み込んでる`app.module.ts`を確認。
@@ -162,7 +162,7 @@ export class AppComponent {
 
 `@Component`の`templateUrl`に指定されているHTMLファイルが呼び出されて画面に表示されることになる。
 上記の例だと`app.component.html`を呼び出すことになる。
-(`@Component`の`selecter`で指定している`app-root`は`src/index.html`の`<app-root>`を指しているんだろうな、と思った。この辺りはAngularを学ぶとわかるんだろうな。)
+(`@Component`の`selector`で指定している`app-root`は`src/index.html`の`<app-root>`を指しているんだろうな、と思った。この辺りはAngularを学ぶとわかるんだろうな。)
 
 ということで、アプリの画面が表示されるまでに、
 
@@ -175,15 +175,15 @@ src/index.html
 ```
 
 という流れで読み込みをする流れになる。
-ちなみにこの流れでIonicのモジュールはかかわってきていないので、すべてAnguarの仕様なのだ！多分！
+ちなみにこの流れでIonicのモジュールはかかわってきていないので、すべてAngularの仕様なのだ！多分！
 
 ※参考：[[Angular] Angular アプリの構成をみる](https://qiita.com/ksh-fthr/items/d040cf8b2d15bd7e507d)
 
 ## 画面レイアウト
 
-実際に表示される画面のソースコードを少し読んでみる。
+実際に表示される画面のソースコード(`src/app/app.component.html`)を少し読んでみる。
 
-```html :src/app/app.component.html
+```html:src/app/app.component.html
 <ion-app>
   <ion-split-pane contentId="main-content">
     <ion-menu contentId="main-content" type="overlay">
@@ -265,7 +265,7 @@ import { AppRoutingModule } from './app-routing.module';
 
 `app-routing.module.ts`を確認してみる。
 
-```typescript :src/app/app-routing.module.ts
+```typescript:src/app/app-routing.module.ts
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
