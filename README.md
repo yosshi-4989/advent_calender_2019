@@ -4,130 +4,327 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト
+# 本日のコンテキスト[Ionicアプリが表示されるまでと最初のサンプルプロジェクト]
 
-今日はIonicの環境構築の手順をまとめる！
+今日はタスクリストアプリ作成を通してIonicの基礎的な部分を学習していく。
 
 ## 目次
 
-1. [構築環境](#構築環境)
-1. [Node.jsインストール](#Node.jsインストール)
-1. [Ionic CLIインストール](#Ionic-CLIインストール)
-1. [Gitインストール](#Gitインストール)
-1. [Visual Studio Codeインストール](#Visual-Studio-Codeインストール)
-1. [サンプルプロジェクトを作ってみる](#サンプルプロジェクトを作ってみる)
+1. [Ionicの基本](#Ionicの基本)
+1. [タスクリストアプリ作成](#タスクリストアプリ作成)
+1. [](#)
 1. [おわりに](#おわりに)
-1. [TIPS](#TIPS)
 
-## 構築環境
+## Ionicの画面描画の流れ
 
-- Git: version 2.17.0.windows.1
-- Node.js: v12.13.1
-- Ionic CLI: ionic@5.4.9
-- エディタ: VSCode
+Ionicアプリで画面が描画されるまでを追ってみる。
 
-※Xcode, Android Studioはスマホアプリ用にビルドすることを考えてないのでスキップする。
+まずは一番おおもとになるHTMLファイルを確認する。
 
-## Node.jsインストール
+```html:src/app/index.html
+<!DOCTYPE html>
+<html lang="en">
 
-[Node.jsの公式サイト](https://nodejs.org/ja/)からインストーラをインストールしてインストールする。
-インストール後、以下のコマンドで正しいバージョンが表示されればOK。
+<head>
+  (headは省略)
+</head>
 
-```
-> node -v
-v12.13.1
-```
+<body>
+  <app-root></app-root>
+</body>
 
-## Ionic CLIインストール
-
-次にIonic CLIをインストールする。
-インストールは以下のコマンドでできる
-
-```
-> npm install ionic -g
-> ionic -v
-5.4.9
+</html>
 ```
 
-せっかくなのでnpm installコマンドのオプションについて一部メモ
+bodyタグにある`<app-root>`が横、縦に100%となってこの中にアプリケーションが描画されていくことになる模様。
+以下のように修正することでアプリケーションのコンテンツが表示されるまで「Loading...」というただのテキストが表示されるようになる。
 
-- "--global(-g)": グローバル領域にインストール。CLIは共通でいいから -g を付けた？
-- "--save(-S)": package.jsonのdependenciesにバージョン付きで追記する。プロジェクトにかかわるパッケージをインストールする場合は必ずつけたほうがいいね。デフォルトでオンになっているとの記述もある…
-
-## Gitインストール
-
-Gitも開発で必要なので入ってない場合は[Gitの公式サイト](https://git-scm.com/download)からインストーラをダウンロードしてインストールする。
-
-```
-> git --version
-git version 2.17.0.windows.1
+```diff
+-  <app-root></app-root>
++  <app-root>Loading...</app-root>
 ```
 
-## Visual Studio Codeインストール
+次にメインとなるJSファイル。
 
-IDE/エディタは無料かつIonicの開発をサポートできるのでVSCode一択。
-[VSCodeの公式サイト](https://code.visualstudio.com/)からインストーラをダウンロードしてインストールする。(こればっかだな)
+```typescript:src/app/main.ts
+import { enableProdMode } from '@angular/core';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
-そしてVSCodeのインストールが終わったら起動してIonic開発をサポートする拡張機能をインストールする。
-下記画像の赤枠のボタンを押して検索窓に「Angular Language Service」と入力すると、黄枠の拡張機能が表示されるので、インストールする。
+import { AppModule } from './app/app.module';
+import { environment } from './environments/environment';
 
-![Angular拡張機能](https://github.com/yosshi-4989/advent_calender_2019/blob/images/Angular%E6%8B%A1%E5%BC%B5%E6%A9%9F%E8%83%BD.png)
+if (environment.production) {
+  enableProdMode();
+}
 
-以上で環境構築終わり。
-
-## サンプルプロジェクトを作ってみる
-
-環境構築が終わったのでとりあえずサンプルプロジェクトを作って動くことを確認する。
-※プロジェクト名は明日も利用するために`tasklist-tutorial`にする
-
-```
-> ionic start --type=angular
-? Project name: tasklist-tutorial
-? Starter template:
-  tabs         | A starting project with a simple tabbed interface
-> sidemenu     | A starting project with a side menu with navigation in the content area 
-  blank        | A blank starter project
-  my-first-app | An example application that builds a camera with gallery
-  conference   | A kitchen-sink application that shows off all Ionic has to offer        
-
-[INFO] Next Steps:
-
-       - Go to your newly created project: cd .\tasklist-tutorial
-       - Run ionic serve within the app directory to see your app
-       - Build features and components: https://ion.link/scaffolding-docs
-       - Run your app on a hardware or virtual device: https://ion.link/running-docs
+platformBrowserDynamic().bootstrapModule(AppModule)
+  .catch(err => console.log(err));
 ```
 
-作成が終わったのでサンプルプロジェクトを起動してみる。
+`enableProdMode`は実行環境をproductionモードにするオブジェクトで`platformBrowserDynamic`はアプリとして起動するためのオブジェクト。
+`enableProdMode`を有効にするか確認するために`environment`を読み込んであり、実際に起動するアプリ(モジュール？)を読み込むために`AppModule`を読み込んでいることがわかる。
+※ちなみにここまではAnguarの構造でIonicではないっぽい。
+
+じゃあ、実際に読み込んでるアプリケーションってなんなの？ってことで`src/app/`配下を見ていく。
+ということで読み込んでる`app.module.ts`を確認。
+
+```typescript:src/app/app.module.ts
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { RouteReuseStrategy } from '@angular/router';
+
+import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { StatusBar } from '@ionic-native/status-bar/ngx';
+
+import { AppComponent } from './app.component';
+import { AppRoutingModule } from './app-routing.module';
+
+@NgModule({
+  declarations: [AppComponent],
+  entryComponents: [],
+  imports: [
+    BrowserModule,
+    IonicModule.forRoot(),
+    AppRoutingModule
+  ],
+  providers: [
+    StatusBar,
+    SplashScreen,
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
+  ],
+  bootstrap: [AppComponent]
+})
+export class AppModule {}
+```
+
+`app.module.ts`では、アプリ内で利用する機能を登録している…とのこと。
+Angularではページやコンポーネントをモジュール単位で扱うので、ページを追加するなどで新しいファイルを作成しても`@NgModule`に登録しないと動かない。
+
+`@NgModule`のbootstrapに指定されているモジュールが立ち上がるページになる。上記の例だと`bootstrap: [AppComponent]`の`AppComponent`に当たる。
+(`@NgModule`の他の内容については後で説明されるのかな？なかったら調べてみるのもありか。呼び出し元の関数名が`bootstrapModule()`だから`bootstrap`を呼び出しているのは直感的。)
+
+ということで`AppComponent`を呼び出しているので、`import { AppComponent } from './app.component';`から`app.component.ts`を確認してみましょ。
+※ちなみに同じディレクトリに`app.component.html`があるけど、当然JSファイルの`app.component.ts`が読み込まれるっす。(何となく書いて頭に入れといたほうがいい気がしたので明記する)
+
+```typescript:src/app/app.component.ts
+import { Component } from '@angular/core';
+
+import { Platform } from '@ionic/angular';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { StatusBar } from '@ionic-native/status-bar/ngx';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: 'app.component.html',
+  styleUrls: ['app.component.scss']
+})
+export class AppComponent {
+  public appPages = [
+    {
+      title: 'Home',
+      url: '/home',
+      icon: 'home'
+    },
+    {
+      title: 'List',
+      url: '/list',
+      icon: 'list'
+    }
+  ];
+
+  constructor(
+    private platform: Platform,
+    private splashScreen: SplashScreen,
+    private statusBar: StatusBar
+  ) {
+    this.initializeApp();
+  }
+
+  initializeApp() {
+    this.platform.ready().then(() => {
+      this.statusBar.styleDefault();
+      this.splashScreen.hide();
+    });
+  }
+}
+```
+
+注目するべきはここ。
+
+```typescript
+@Component({
+  selector: 'app-root',
+  templateUrl: 'app.component.html',
+  styleUrls: ['app.component.scss']
+})
+```
+
+`@Component`の`templateUrl`に指定されているHTMLファイルが呼び出されて画面に表示されることになる。
+上記の例だと`app.component.html`を呼び出すことになる。
+(`@Component`の`selecter`で指定している`app-root`は`src/index.html`の`<app-root>`を指しているんだろうな、と思った。この辺りはAngularを学ぶとわかるんだろうな。)
+
+ということで、アプリの画面が表示されるまでに、
 
 ```
-> cd ./tasklist-tutorial
-> ionic serve
+src/index.html
+-> src/main.ts
+-> src/app/app.module.ts
+-> src/app/app.component.ts
+-> src/app/app.component.html
 ```
 
-![Ionicアプリ起動](https://github.com/yosshi-4989/advent_calender_2019/blob/images/run-first-project.png)
+という流れで読み込みをする流れになる。
+ちなみにこの流れでIonicのモジュールはかかわってきていないので、すべてAnguarの仕様なのだ！多分！
 
-アプリが起動した！
+※参考：[[Angular] Angular アプリの構成をみる](https://qiita.com/ksh-fthr/items/d040cf8b2d15bd7e507d)
+
+## 画面レイアウト
+
+実際に表示される画面のソースコードを少し読んでみる。
+
+```html :src/app/app.component.html
+<ion-app>
+  <ion-split-pane contentId="main-content">
+    <ion-menu contentId="main-content" type="overlay">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Menu</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <ion-list>
+          <ion-menu-toggle auto-hide="false" *ngFor="let p of appPages">
+            <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
+              <ion-icon slot="start" [name]="p.icon"></ion-icon>
+              <ion-label>
+                {{p.title}}
+              </ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+        </ion-list>
+      </ion-content>
+    </ion-menu>
+    <ion-router-outlet id="main-content"></ion-router-outlet>
+  </ion-split-pane>
+</ion-app>
+```
+
+まず注目する形。
+
+```html
+  <ion-split-pane contentId="main-content">
+    <ion-menu contentId="main-content" type="overlay">
+        (中略)
+    </ion-menu>
+    <ion-router-outlet id="main-content"></ion-router-outlet>
+  </ion-split-pane>
+```
+
+`<ion-split-pane>`は幅が狭いと`contentId`で指定されたコンテンツ以外(予想※)を省略し、幅が広いと表示してくれるコンポーネント。
+<br/>
+※サンプルコードを見たところの所感。3つ以上の時に本当にその挙動をするか未検証。
+<br/>
+今回は`<ion-menu>`と`<ion-router-outlet>`の2つの要素があり、`<ion-router-outlet>`のidが指定されているので`<ion-menu>`が省略される。
+
+※参考：[ion-split-pane - Ionic Framework 日本語ドキュメンテーション](https://ionicframework.com/jp/docs/api/split-pane)
+
+次に、`<ion-menu>`内のこれに注目。
+
+```
+          <ion-menu-toggle auto-hide="false" *ngFor="let p of appPages">
+            <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
+              <ion-icon slot="start" [name]="p.icon"></ion-icon>
+              <ion-label>
+                {{p.title}}
+              </ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+```
+
+`*ngFor`の記法とかもあるけど、今回は`<ion-item [routerDirection]="'root'" [routerLink]="[p.url]">`について、`[routerDirection]`と`[routerLink]`はURLルーティングのディレクティブとのこと。
+これによってこの要素をクリックした際にルーターのrootの中身を`p.url`に書き換えることができる。
+今回だとrootが`<ion-router-outlet>`らしいんだけど、~~これも`<ion-menu>`の`contentId`で指定されているからなんだろうか？~~[ドキュメント](https://ionicframework.com/jp/docs/api/router-outlet)によるとルーティングする対象が`<ion-router-outlet>`で指定されているっぽい。(Angular以外は`<ion-router>`)
+
+最後に`<ion-router-outlet>`の中身を確認するためにルーティング周りを確認する。
+`app.module.ts`によると下記のようにモジュールを読み込んでいる。
+
+```typescript:src/app/app.module.ts
+・・・
+import { AppRoutingModule } from './app-routing.module';
+
+@NgModule({
+  declarations: [AppComponent],
+  entryComponents: [],
+  imports: [
+    BrowserModule,
+    IonicModule.forRoot(),
+    AppRoutingModule
+・・・
+```
+
+`app-routing.module.ts`を確認してみる。
+
+```typescript :src/app/app-routing.module.ts
+import { NgModule } from '@angular/core';
+import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+
+const routes: Routes = [
+  {
+    path: '',
+    redirectTo: 'home',
+    pathMatch: 'full'
+  },
+  {
+    path: 'home',
+    loadChildren: () => import('./home/home.module').then(m => m.HomePageModule)
+  },
+  {
+    path: 'list',
+    loadChildren: () => import('./list/list.module').then(m => m.ListPageModule)
+  }
+];
+
+@NgModule({
+  imports: [
+    RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })
+  ],
+  exports: [RouterModule]
+})
+export class AppRoutingModule {}
+```
+
+`routes`が定義されていて、RouterModuleに登録されている。pathはURLのパスを表しており、他の要素はそれぞれの処理(リダイレクト、モジュール読み込み)を表している。
+
+あとはそれぞれのスクリプトファイルから読み込むHTMLファイルを特定すればOK。
+
+## タスクリストアプリ作成
+
+ということでやっとこさタスクリストアプリ作成に入る…と思ったけど結構長くなったので終わり！
+[diffのリンク](https://github.com/yosshi-4989/advent_calender_2019/compare/2019-12-03..2019-12-04)と画面だけ張って終わり！
+<br>
+※diffのリンク先はアプリだけじゃなくREADMEのdiffも含まれることに注意。
+※画像は左から「タスク登録画面」「ページメニュー」「タスク一覧画面」「タスク操作メニュー」「タスク編集ダイアログ」のキャプチャ
+
+![タスクリストアプリ画面キャプチャ](https://github.com/yosshi-4989/advent_calender_2019/blob/images/task-list-view.png)
 
 ## おわりに
 
-今日は環境構築のみでした。
-明日から実際にアプリ開発もどきができるかな。
-チュートリアルだし、そのままというよりかはIonicについてちょっと深堀した内容を記載できるように意識してみようと思いますです。
+良い点：Ionic(Angular)アプリの画面が表示されるまでの流れをちゃんと追ったことがなかったので、まだちゃんと理解はしてないけどいい学びの機会になったと思う。
+<br>
+悪い点：アプリ開発について特に書けなかった。
 
-## Tips
+アプリ開発の項目をスキップしてしまったのは少し反省。ただ、アプリを作る部分をそのまま載せても何も面白くないので、アプリが表示されるまでを追うことができたのはよかったと思う。
 
-- WindowsでNode.jsのバージョン管理をしたい場合、[nvm(node version manager)](https://github.com/coreybutler/nvm-windows)というアプリ(ライブラリ？)を使うらしい。
-- VSCodeでMarkdownを書くときは[Ctrl + k] -> [v]でプレビュー画面が表示できる。
-- Markdownでページ内リンクは`[見出し](#見出し)`で`#`は一つ、空白は`-`を利用する
+明日はもう少しちゃんとやれたらいいな(笑)
 
 # アドベントカレンダー
 
 |日付|タイトル|
 |-----|------|
 |12/02|[アドベントカレンダーやる宣言](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-02)|
-|12/03|[Ioic環境構築](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-03)|
-|12/04|[Ionicの基本と初めての開発](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-04)|
+|12/03|[Ionic環境構築](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-03)|
+|12/04|[Ionicアプリが表示されるまでと最初のサンプルプロジェクト](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-04)|
 |12/05|[WordPressと連携してみる](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-05)|
 |12/06|[リファクタリング！](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-06)|
 |12/07|[Capacitorを使ってみる](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-07)|
