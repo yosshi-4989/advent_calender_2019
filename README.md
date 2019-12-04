@@ -4,319 +4,197 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[Ionicアプリが表示されるまでと最初のサンプルプロジェクト]
+# 本日のコンテキスト[WordPressと連携してみる]
 
-今日はタスクリストアプリ作成を通してIonicの基礎的な部分を学習していく。
+今日はWordPressのAPIを利用してWordPressのブログを表示するアプリケーションを作成していく。
+また、このアプリケーション作成を通してIonicで外部APIと連携する方法を学ぶ。
 
 ## 目次
 
-1. [Ionicの画面描画の流れ](#Ionicの画面描画の流れ)
-1. [画面レイアウト](#画面レイアウト)
-1. [タスクリストアプリ作成](#タスクリストアプリ作成)
+1. [WordPressのAPI](#WordPressのAPI)
+1. [Ionicで外部APIをたたく](#Ionicで外部APIをたたく)
+1. [ページ遷移時に値を受け渡す](#ページ遷移時に値を受け渡す)
+1. [出来上がったアプリケーション](#出来上がったアプリケーション)
 1. [おわりに](#おわりに)
 
-## Ionicの画面描画の流れ
+## WordPressのAPI
 
-Ionicアプリで画面が描画されるまでを追ってみる。
+アプリケーションを作成する前にWordPressの(今回利用する)APIについて軽くまとめておく。
 
-まずは一番おおもとになるHTMLファイル(`src/index.html`)を確認する。
+今回利用するAPIは以下の2つ
+- [記事一覧を取得するAPI](https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/posts/)<br>
+URL：`https://public-api.wordpress.com/rest/v1.1/sites/$site/posts/`
+- [記事の詳細を取得するAPI](https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/posts/%24post_ID/)<br>
+URL：`https://public-api.wordpress.com/rest/v1.1/sites/$site/posts/$post_ID`
 
-```html:src/index.html
-<!DOCTYPE html>
-<html lang="en">
+この時、`$site`には記事を取得したいサイトのURL(ドメイン)を、`$post_ID`には記事のIDを入れる。
+[今回学習に利用している本](https://www.amazon.co.jp/dp/4863542925/)では`ionicjp.wordpress.com`というサイトを用意しているので次節以降は`$site`にこのサイトを利用する。
 
-<head>
-  (headは省略)
-</head>
+記事一覧を取得するAPIを叩くと以下の形式のJSONを取得することができる。
+今回はpostsのtitleとdateを利用して一覧を表示、IDを利用して記事の詳細を取得する。
 
-<body>
-  <app-root></app-root>
-</body>
-
-</html>
+```json
+{
+  "found": "記事の取得件数",
+  "posts": [
+    {
+        "ID": "記事のID",
+        "title": "タイトル",
+        "content": "本文",
+        "date": "登録日",
+        ...
+    }, {
+        ...
+    }
+  ]
+}
 ```
 
-bodyタグにある`<app-root>`が横、縦に100%となってこの中にアプリケーションが描画されていくことになる模様。
-以下のように修正することでアプリケーションのコンテンツが表示されるまで「Loading...」というただのテキストが表示されるようになる。
+記事の詳細を取得するAPIは以下の形式のJSONを取得することができる。
+上記の記事一覧postsの要素のうち`$post_ID`で指定したIDと一致する記事のみ取得できるので、title、content、dateを利用して記事詳細を表示する。
+
+```json
+{
+  "ID": "記事のID",
+  "title": "タイトル",
+  "content": "本文",
+  "date": "登録日",
+    ...
+}
+```
+
+それぞれの省略された要素は今回扱わないので興味があれば[WordPressの公式サイト](https://developer.wordpress.com/docs/api/)を確認してみてね。
+
+## Ionicで外部APIをたたく
+
+WordPress用のアプリケーションとして、新規にプロジェクトを開始する。
+この時のテンプレートはblankを選択した。
+
+外部APIをたたくためにはHTTP通信をする必要があるので、まず`src/app/app.module.ts`で`HttpClientModule`をimportする。
 
 ```diff
--  <app-root></app-root>
-+  <app-root>Loading...</app-root>
+  ...
++ import { HttpClientModule } from '@angular/common/http';
+
+  @NgModule({
+    declarations: [AppComponent],
+    entryComponents: [],
+-    imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule],
++    imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, HttpClientModule],
+    providers: [
+    ...
 ```
 
-次にメインとなるJSファイル(`src/main.ts`)。
-
-```typescript:src/main.ts
-import { enableProdMode } from '@angular/core';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-
-import { AppModule } from './app/app.module';
-import { environment } from './environments/environment';
-
-if (environment.production) {
-  enableProdMode();
-}
-
-platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.log(err));
-```
-
-`enableProdMode`は実行環境をproductionモードにするオブジェクトで`platformBrowserDynamic`はアプリとして起動するためのオブジェクト。
-`enableProdMode`を有効にするか確認するために`environment`を読み込んであり、実際に起動するアプリ(モジュール？)を読み込むために`AppModule`を読み込んでいることがわかる。
-※ちなみにここまではAngularの構造でIonicではないっぽい。
-
-じゃあ、実際に読み込んでるアプリケーションってなんなの？ってことで`src/app/`配下を見ていく。
-ということで読み込んでる`app.module.ts`を確認。
-
-```typescript:src/app/app.module.ts
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { RouteReuseStrategy } from '@angular/router';
-
-import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
-
-import { AppComponent } from './app.component';
-import { AppRoutingModule } from './app-routing.module';
-
-@NgModule({
-  declarations: [AppComponent],
-  entryComponents: [],
-  imports: [
-    BrowserModule,
-    IonicModule.forRoot(),
-    AppRoutingModule
-  ],
-  providers: [
-    StatusBar,
-    SplashScreen,
-    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
-  ],
-  bootstrap: [AppComponent]
-})
-export class AppModule {}
-```
-
-`app.module.ts`では、アプリ内で利用する機能を登録している…とのこと。
-Angularではページやコンポーネントをモジュール単位で扱うので、ページを追加するなどで新しいファイルを作成しても`@NgModule`に登録しないと動かない。
-
-`@NgModule`のbootstrapに指定されているモジュールが立ち上がるページになる。上記の例だと`bootstrap: [AppComponent]`の`AppComponent`に当たる。
-(`@NgModule`の他の内容については後で説明されるのかな？なかったら調べてみるのもありか。呼び出し元の関数名が`bootstrapModule()`だから`bootstrap`を呼び出しているのは直感的。)
-
-ということで`AppComponent`を呼び出しているので、`import { AppComponent } from './app.component';`から`app.component.ts`を確認してみましょ。
-※ちなみに同じディレクトリに`app.component.html`があるけど、当然JSファイルの`app.component.ts`が読み込まれるっす。(何となく書いて頭に入れといたほうがいい気がしたので明記する)
-
-```typescript:src/app/app.component.ts
-import { Component } from '@angular/core';
-
-import { Platform } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
-
-@Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss']
-})
-export class AppComponent {
-  public appPages = [
-    {
-      title: 'Home',
-      url: '/home',
-      icon: 'home'
-    },
-    {
-      title: 'List',
-      url: '/list',
-      icon: 'list'
-    }
-  ];
-
-  constructor(
-    private platform: Platform,
-    private splashScreen: SplashScreen,
-    private statusBar: StatusBar
-  ) {
-    this.initializeApp();
-  }
-
-  initializeApp() {
-    this.platform.ready().then(() => {
-      this.statusBar.styleDefault();
-      this.splashScreen.hide();
-    });
-  }
-}
-```
-
-注目するべきはここ。
+これで`HttpClient`を利用することができるようになったのでページを表示するときに記事一覧を取得するように`src/app/home/home.page.ts`を書き換える。
 
 ```typescript
+import { Component } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
 @Component({
-  selector: 'app-root',
-  templateUrl: 'app.component.html',
-  styleUrls: ['app.component.scss']
+  selector: 'app-home',
+  templateUrl: 'home.page.html',
+  styleUrls: ['home.page.scss'],
 })
+export class HomePage {
+  // コンストラクタでHttpClientをhttpに入れる
+  constructor(public http: HttpClient) {}
+
+  ionViewDidEnter() {
+    // ページ表示完了後に記事リストを取得しに行く
+    this.http.get('https://public-api.wordpress.com/rest/v1.1/sites/ionicjp.wordpress.com/posts/')
+      .subscribe(data => {
+        // 取得したデータに対して処理を行う
+      });
+  }
+}
 ```
 
-`@Component`の`templateUrl`に指定されているHTMLファイルが呼び出されて画面に表示されることになる。
-上記の例だと`app.component.html`を呼び出すことになる。
-(`@Component`の`selector`で指定している`app-root`は`src/index.html`の`<app-root>`を指しているんだろうな、と思った。この辺りはAngularを学ぶとわかるんだろうな。)
+今回のアプリケーションでは記事一覧を格納するpostsを定義してそこに追加する処理を実装した。後は取得した記事を表示するようにHTMLを修正すればOKなので省略。
 
-ということで、アプリの画面が表示されるまでに、
+ちなみに表示するときに`<ion-card>`を利用して以下のようにしてた。
+それっぽいね！
 
-```
-src/index.html
--> src/main.ts
--> src/app/app.module.ts
--> src/app/app.component.ts
--> src/app/app.component.html
-```
+![記事一覧ページ](https://github.com/yosshi-4989/advent_calender_2019/blob/images/posts-list.png)
 
-という流れで読み込みをする流れになる。
-ちなみにこの流れでIonicのモジュールはかかわってきていないので、すべてAngularの仕様なのだ！多分！
 
-※参考：[[Angular] Angular アプリの構成をみる](https://qiita.com/ksh-fthr/items/d040cf8b2d15bd7e507d)
+## ページ遷移時に値を受け渡す
 
-## 画面レイアウト
+記事一覧画面が表示できたので、次に選択した記事の詳細ページを表示する機能を実装する。
+詳細ページが必要なので、`article`というページを事前に作成しておく。
 
-実際に表示される画面のソースコード(`src/app/app.component.html`)を少し読んでみる。
+まず、一覧画面から詳細画面への遷移を考える。
+ページを作成した際に自動的にURLのルーティンに`article`が追加されるので、`src/app/home/home.page.ts`の記事の要素(`<ion-card>`)に`routerLink="/article"`を付けてやればページ遷移はできる。
 
-```html:src/app/app.component.html
-<ion-app>
-  <ion-split-pane contentId="main-content">
-    <ion-menu contentId="main-content" type="overlay">
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Menu</ion-title>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content>
-        <ion-list>
-          <ion-menu-toggle auto-hide="false" *ngFor="let p of appPages">
-            <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
-              <ion-icon slot="start" [name]="p.icon"></ion-icon>
-              <ion-label>
-                {{p.title}}
-              </ion-label>
-            </ion-item>
-          </ion-menu-toggle>
-        </ion-list>
-      </ion-content>
-    </ion-menu>
-    <ion-router-outlet id="main-content"></ion-router-outlet>
-  </ion-split-pane>
-</ion-app>
+ただ、この方法だと記事のIDを渡すことができない。どうやって渡すかというと、以下のように編集する。
+
+```diff
+-  <ion-card *ngFor="let p of posts">
++  <ion-card *ngFor="let p of posts" routerLink="/article/{{p.ID}}">
 ```
 
-まず注目する形。
+こうすると、`/article`からURLルーティングによって`src/app/article/article.module.ts`を読み込み、`/{{p.ID}}`を渡すことができる。
+ただ、現状`article`側で受け取る設定をしていないのでこのままではエラーになる。
 
-```html
-  <ion-split-pane contentId="main-content">
-    <ion-menu contentId="main-content" type="overlay">
-        (中略)
-    </ion-menu>
-    <ion-router-outlet id="main-content"></ion-router-outlet>
-  </ion-split-pane>
-```
+`article`側では`src/app/article/article-routing.module.ts`の`path`へ`:[変数名]`の形式で設定することで受け取り可能になる。今回は`:articleId`で指定した。
 
-`<ion-split-pane>`は幅が狭いと`contentId`で指定されたコンテンツ以外(予想※)を省略し、幅が広いと表示してくれるコンポーネント。
-<br/>
-※サンプルコードを見たところの所感。3つ以上の時に本当にその挙動をするか未検証。
-<br/>
-今回は`<ion-menu>`と`<ion-router-outlet>`の2つの要素があり、`<ion-router-outlet>`のidが指定されているので`<ion-menu>`が省略される。
-
-※参考：[ion-split-pane - Ionic Framework 日本語ドキュメンテーション](https://ionicframework.com/jp/docs/api/split-pane)
-
-次に、`<ion-menu>`内のこれに注目。
-
-```
-          <ion-menu-toggle auto-hide="false" *ngFor="let p of appPages">
-            <ion-item [routerDirection]="'root'" [routerLink]="[p.url]">
-              <ion-icon slot="start" [name]="p.icon"></ion-icon>
-              <ion-label>
-                {{p.title}}
-              </ion-label>
-            </ion-item>
-          </ion-menu-toggle>
-```
-
-`*ngFor`の記法とかもあるけど、今回は`<ion-item [routerDirection]="'root'" [routerLink]="[p.url]">`について、`[routerDirection]`と`[routerLink]`はURLルーティングのディレクティブとのこと。
-これによってこの要素をクリックした際にルーターのrootの中身を`p.url`に書き換えることができる。
-今回だとrootが`<ion-router-outlet>`らしいんだけど、~~これも`<ion-menu>`の`contentId`で指定されているからなんだろうか？~~[ドキュメント](https://ionicframework.com/jp/docs/api/router-outlet)によるとルーティングする対象が`<ion-router-outlet>`で指定されているっぽい。(Angular以外は`<ion-router>`)
-
-最後に`<ion-router-outlet>`の中身を確認するためにルーティング周りを確認する。
-`app.module.ts`によると下記のようにモジュールを読み込んでいる。
-
-```typescript:src/app/app.module.ts
-・・・
-import { AppRoutingModule } from './app-routing.module';
-
-@NgModule({
-  declarations: [AppComponent],
-  entryComponents: [],
-  imports: [
-    BrowserModule,
-    IonicModule.forRoot(),
-    AppRoutingModule
-・・・
-```
-
-`app-routing.module.ts`を確認してみる。
-
-```typescript:src/app/app-routing.module.ts
-import { NgModule } from '@angular/core';
-import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
-
+```typescript
 const routes: Routes = [
   {
-    path: '',
-    redirectTo: 'home',
-    pathMatch: 'full'
-  },
-  {
-    path: 'home',
-    loadChildren: () => import('./home/home.module').then(m => m.HomePageModule)
-  },
-  {
-    path: 'list',
-    loadChildren: () => import('./list/list.module').then(m => m.ListPageModule)
+    path: ':articleId',
+    component: ArticlePage
   }
 ];
-
-@NgModule({
-  imports: [
-    RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })
-  ],
-  exports: [RouterModule]
-})
-export class AppRoutingModule {}
 ```
 
-`routes`が定義されていて、RouterModuleに登録されている。pathはURLのパスを表しており、他の要素はそれぞれの処理(リダイレクト、モジュール読み込み)を表している。
+これで`/{{p.ID}}`と`:articleId`が結びつくようになり、結びついたときに`ArticlePage`を呼び出す。
 
-あとはそれぞれのスクリプトファイルから読み込むHTMLファイルを特定すればOK。
+最後に`ArticlePage`内で`:articleId`を呼び出す方法を示す。
+といっても以下のように`src/app/article/article.page.ts`を修正するだけ。
 
-## タスクリストアプリ作成
+```typescript
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 
-ということでやっとこさタスクリストアプリ作成に入る…と思ったけど結構長くなったので終わり！
-[diffのリンク](https://github.com/yosshi-4989/advent_calender_2019/compare/2019-12-03..2019-12-04)と画面だけ張って終わり！
-<br>
-※diffのリンク先はアプリだけじゃなくREADMEのdiffも含まれることに注意。
-※画像は左から「タスク登録画面」「ページメニュー」「タスク一覧画面」「タスク操作メニュー」「タスク編集ダイアログ」のキャプチャ
+@Component({
+  selector: 'app-article',
+  templateUrl: './article.page.html',
+  styleUrls: ['./article.page.scss'],
+})
+export class ArticlePage implements OnInit {
+  ID: number; // 取得した値を格納する変数
 
-![タスクリストアプリ画面キャプチャ](https://github.com/yosshi-4989/advent_calender_2019/blob/images/task-list-view.png)
+constructor(public route: ActivatedRoute) { }
+
+  ngOnInit() {
+    this.route.paramMap
+      .subscribe((params: ParamMap) => {
+        // paramsに含まれるarticleIdを数値に変換して格納する
+        this.ID = parseInt(params.get('articleId'), 10);
+      });
+  }
+}
+```
+
+これで記事のIDを受け取ることができので、あとは[Ionicで外部APIをたたく](#Ionicで外部APIをたたく)でやったようにAPIをたたいて変数に格納し、画面に表示すれば出来上がり。
+
+余談だが、WordPressのcontentにはHTMLが格納されているので今まで通り`{{post.content}}`で表示するとHTMLがサニタイズされて表示される。(HTMLタグ等がそのまま表示される。)サニタイズせずに表示するためにはcontentを表示する`<div>`タグのattributeに`[innerHTML]="post.content"`と記載することでHTMLを反映した表示にすることができる。ただし、HTMLをそのまま反映するような処理にすると悪意のあるコードを仕込まれてセキュリティーの問題につながるため、注意する。
+
+## 出来上がったアプリケーション
+
+というわけでWordPressから記事を取得して一覧、詳細を表示するアプリケーションができました。
+
+[記事一覧画面作成作業内容](https://github.com/yosshi-4989/advent_calender_2019/compare/16966c67a6a18617a15d12d751c1141b6ddea141..e407d9cf94d0089f5b9cbb05ff85e6d12708dece)と[記事詳細画面作成作業内容](https://github.com/yosshi-4989/advent_calender_2019/compare/e407d9cf94d0089f5b9cbb05ff85e6d12708dece..8c06ff35a508a4d301a120e275908b9e0312c4b4)のdiffとおまけで[UXを高める修正](https://github.com/yosshi-4989/advent_calender_2019/compare/8c06ff35a508a4d301a120e275908b9e0312c4b4..59f0a2ce7f53dcb8d01f56b15c95c68d4722abfc)があったのでそれぞれのdiffへリンクしておく。
+
+画面はこんな感じになった。左が一覧画面で右が詳細画面。
+
+![WordPress記事表示アプリケーション](https://github.com/yosshi-4989/advent_calender_2019/blob/images/wordpress-application.png)
 
 ## おわりに
 
-良い点：Ionic(Angular)アプリの画面が表示されるまでの流れをちゃんと追ったことがなかったので、まだちゃんと理解はしてないけどいい学びの機会になったと思う。
-<br>
-悪い点：アプリ開発について特に書けなかった。
+今日はアプリケーション開発がメインだったけど、開発内容を記載するというより、機能を実装する上で主題となっている項目に着目した記事になるように意識してみた。ソースコードそのまま載せるよりも特定の項目に焦点を当てていこうかなって思った。
 
-アプリ開発の項目をスキップしてしまったのは少し反省。ただ、アプリを作る部分をそのまま載せても何も面白くないので、アプリが表示されるまでを追うことができたのはよかったと思う。
-
-明日はもう少しちゃんとやれたらいいな(笑)
+書籍も4章まで終わった。5章はリファクタリング。コードを共通化したりモジュールを統一したりするっぽい？明日も楽しみだ。
 
 # アドベントカレンダー
 
