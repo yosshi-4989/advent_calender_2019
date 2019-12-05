@@ -6,6 +6,7 @@ import { RouterModule } from '@angular/router';
 
 import { HomePage } from './home.page';
 import { SharedModule } from '../shared/shared.module';
+import { ArticlePage } from '../article/article.page';
 
 @NgModule({
   imports: [
@@ -17,9 +18,13 @@ import { SharedModule } from '../shared/shared.module';
       {
         path: '',
         component: HomePage
+      },
+      {
+        path: ':articleId',
+        component: ArticlePage
       }
     ])
   ],
-  declarations: [HomePage]
+  declarations: [HomePage, ArticlePage]
 })
 export class HomePageModule {}
