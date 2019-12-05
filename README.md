@@ -4,197 +4,242 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[WordPressと連携してみる]
+# 本日のコンテキスト[リファクタリングしよう！]
 
-今日はWordPressのAPIを利用してWordPressのブログを表示するアプリケーションを作成していく。
-また、このアプリケーション作成を通してIonicで外部APIと連携する方法を学ぶ。
+今日はリファクタリングの5章。書籍も折り返しです。ちょっとずつ疲れがたまってきてますが元気に始めていきましょう。
 
 ## 目次
 
-1. [WordPressのAPI](#WordPressのAPI)
-1. [Ionicで外部APIをたたく](#Ionicで外部APIをたたく)
-1. [ページ遷移時に値を受け渡す](#ページ遷移時に値を受け渡す)
-1. [出来上がったアプリケーション](#出来上がったアプリケーション)
+1. [Serviceを使ってみよう！](#Serviceを使ってみよう！)
+1. [型を共通化しよう！](#型を共通化しよう！)
+1. [カスタムコンポーネントを作ってみよう！](#カスタムコンポーネントを作ってみよう！)
 1. [おわりに](#おわりに)
 
-## WordPressのAPI
+## Serviceを使ってみよう！
 
-アプリケーションを作成する前にWordPressの(今回利用する)APIについて軽くまとめておく。
+HTTP通信はサービスで行うことが一般的らしいのでWordPressからデータを取ってくる処理をサービスに移設します！
+ん？サービスって何？
 
-今回利用するAPIは以下の2つ
-- [記事一覧を取得するAPI](https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/posts/)<br>
-URL：`https://public-api.wordpress.com/rest/v1.1/sites/$site/posts/`
-- [記事の詳細を取得するAPI](https://developer.wordpress.com/docs/api/1.1/get/sites/%24site/posts/%24post_ID/)<br>
-URL：`https://public-api.wordpress.com/rest/v1.1/sites/$site/posts/$post_ID`
+本には
+>Ionicでは、別のファイルに処理を書く方法として、「サービス」(Dependency Injectionという概念で設計された、コード同士の依存性を低くして汎用性を持たせるための仕組み)を用意しています。
 
-この時、`$site`には記事を取得したいサイトのURL(ドメイン)を、`$post_ID`には記事のIDを入れる。
-[今回学習に利用している本](https://www.amazon.co.jp/dp/4863542925/)では`ionicjp.wordpress.com`というサイトを用意しているので次節以降は`$site`にこのサイトを利用する。
+と書かれてます。
+<br>なるほどわからん。
 
-記事一覧を取得するAPIを叩くと以下の形式のJSONを取得することができる。
-今回はpostsのtitleとdateを利用して一覧を表示、IDを利用して記事の詳細を取得する。
+じゃあ、Dependency Injectionってなんぞ？を調べてみるか、ってことで[この記事](http://blog.a-way-out.net/blog/2015/08/31/your-dependency-injection-is-wrong-as-I-expected/)とか[この記事](https://qiita.com/hshimo/items/1136087e1c6e5c5b0d9f)とか読んでみた。
+<br>
+つまるところ、とあるクラス(ライブラリ)を保持してるクラス(処理)を作成(=依存関係を持つ)すると依存してるクラスを置き換えたり修正するとそれに応じて修正も大変になるから、一か所にまとめてそこから呼び出すようにしようぜってことだな！？(説明力)
 
-```json
-{
-  "found": "記事の取得件数",
-  "posts": [
-    {
-        "ID": "記事のID",
-        "title": "タイトル",
-        "content": "本文",
-        "date": "登録日",
-        ...
-    }, {
-        ...
-    }
-  ]
-}
+んで、Ionicのサービスはそれをなんかこううまくやることができる機能ってことだな！？(語彙力)
+
+んじゃとりあえずやってみよう。まずはサービスの作成から。
+
+```
+$ ionic g service wordpress
 ```
 
-記事の詳細を取得するAPIは以下の形式のJSONを取得することができる。
-上記の記事一覧postsの要素のうち`$post_ID`で指定したIDと一致する記事のみ取得できるので、title、content、dateを利用して記事詳細を表示する。
-
-```json
-{
-  "ID": "記事のID",
-  "title": "タイトル",
-  "content": "本文",
-  "date": "登録日",
-    ...
-}
-```
-
-それぞれの省略された要素は今回扱わないので興味があれば[WordPressの公式サイト](https://developer.wordpress.com/docs/api/)を確認してみてね。
-
-## Ionicで外部APIをたたく
-
-WordPress用のアプリケーションとして、新規にプロジェクトを開始する。
-この時のテンプレートはblankを選択した。
-
-外部APIをたたくためにはHTTP通信をする必要があるので、まず`src/app/app.module.ts`で`HttpClientModule`をimportする。
-
-```diff
-  ...
-+ import { HttpClientModule } from '@angular/common/http';
-
-  @NgModule({
-    declarations: [AppComponent],
-    entryComponents: [],
--    imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule],
-+    imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, HttpClientModule],
-    providers: [
-    ...
-```
-
-これで`HttpClient`を利用することができるようになったのでページを表示するときに記事一覧を取得するように`src/app/home/home.page.ts`を書き換える。
+こんなファイルができた。`Injectable`はクラスをサービスとして扱うためのものらしい。
 
 ```typescript
-import { Component } from '@angular/core';
+import { Injectable } from '@angular/core';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class WordpressService {
+
+  constructor() { }
+}
+```
+
+んじゃHTTP通信してるコードを集めてきましょ。
+
+```typescript
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-@Component({
-  selector: 'app-home',
-  templateUrl: 'home.page.html',
-  styleUrls: ['home.page.scss'],
+@Injectable({
+  providedIn: 'root'
 })
-export class HomePage {
-  // コンストラクタでHttpClientをhttpに入れる
-  constructor(public http: HttpClient) {}
+export class WordpressService {
 
-  ionViewDidEnter() {
-    // ページ表示完了後に記事リストを取得しに行く
-    this.http.get('https://public-api.wordpress.com/rest/v1.1/sites/ionicjp.wordpress.com/posts/')
-      .subscribe(data => {
-        // 取得したデータに対して処理を行う
-      });
+  constructor(public http: HttpClient) { }
+
+  getPosts() {
+    return this.http.get('https://public-api.wordpress.com/rest/v1.1/sites/ionicjp.wordpress.com/posts/');
+  }
+
+  getArticle(id: number) {
+    return this.http.get<{
+      ID: number;
+      title: string;
+      content: string;
+      date: string;
+    }>('https://public-api.wordpress.com/rest/v1.1/sites/ionicjp.wordpress.com/posts/' + id)
   }
 }
 ```
 
-今回のアプリケーションでは記事一覧を格納するpostsを定義してそこに追加する処理を実装した。後は取得した記事を表示するようにHTMLを修正すればOKなので省略。
+ほい、あとはこのサービスクラスをHttpClientの代わりにimportしてgetしてるか所を該当メソッドに変更すれば完成！
 
-ちなみに表示するときに`<ion-card>`を利用して以下のようにしてた。
-それっぽいね！
+これで、もしWordPressのAPIのURLが変わったとしてもこのファイルのURLを変更すれば全体に適用されるから安心だね！
 
-![記事一覧ページ](https://github.com/yosshi-4989/advent_calender_2019/blob/images/posts-list.png)
+subscribeをサービスに入れてないのは処理の内容は各ページで行ったほうが扱いやすいのでそうしてるっぽいね。ブロックの中の処理もこっちに持ってきちゃうと汎用性が下がるから、これがよさそう。
 
+## 型を共通化しよう！
 
-## ページ遷移時に値を受け渡す
+記事の型postは以下の通り
+```typescript
+post: {
+  ID:number,
+  title: string,
+  content: string,
+  date: string,
+}
+```
 
-記事一覧画面が表示できたので、次に選択した記事の詳細ページを表示する機能を実装する。
-詳細ページが必要なので、`article`というページを事前に作成しておく。
+ただ、これを毎回記載するのはめんどいし冗長なので、共通の型を作成して管理する。
 
-まず、一覧画面から詳細画面への遷移を考える。
-ページを作成した際に自動的にURLのルーティンに`article`が追加されるので、`src/app/home/home.page.ts`の記事の要素(`<ion-card>`)に`routerLink="/article"`を付けてやればページ遷移はできる。
+```
+$ ionic g
+? What would you like to generate?       
+> interface
+? Name/path of interface: interfaces/post
+```
 
-ただ、この方法だと記事のIDを渡すことができない。どうやって渡すかというと、以下のように編集する。
+これで`src/app/interfaces/post.ts`が作成されるので、型を定義していく。ちなみに他のクラスとの重複を避けるために頭にIを付けて`IPost`とする。
+
+```typescript
+export interface IPost {
+    ID: number;
+    title: string;
+    content: string;
+    date: string;
+}
+```
+
+あとは、IPostをimportしてpostの型定義部分をIPostに変更して完了！
+すっきりするね！
 
 ```diff
--  <ion-card *ngFor="let p of posts">
-+  <ion-card *ngFor="let p of posts" routerLink="/article/{{p.ID}}">
+# 例えばこんな感じ
++ import { IPOST } from '../interfaces/post';
+
+- posts: {
+-    ID: number;
+-    title: string;
+-    content: string;
+-    date: string;
+- }[] = [];
++ posts: IPost[] = [];
 ```
 
-こうすると、`/article`からURLルーティングによって`src/app/article/article.module.ts`を読み込み、`/{{p.ID}}`を渡すことができる。
-ただ、現状`article`側で受け取る設定をしていないのでこのままではエラーになる。
+## カスタムコンポーネントを作ってみよう！
 
-`article`側では`src/app/article/article-routing.module.ts`の`path`へ`:[変数名]`の形式で設定することで受け取り可能になる。今回は`:articleId`で指定した。
+Ionicでは(他のフレームワークでもできるだろけど)コンポーネントを自作してオリジナルのタグを使うことができる。
 
-```typescript
-const routes: Routes = [
-  {
-    path: ':articleId',
-    component: ArticlePage
-  }
-];
+というわけでオリジナルタグを作成してみよ！
+
+1つのコンポーネントに対して1つのモジュールしか登録できないらしい。そのため複数のモジュール(今回だと`home.module.ts`と`article.module.ts`)に登録するためには、1つのモジュールに登録して他のモジュールで登録したモジュールを読み込む、という手続きが必要らしい。
+
+なので、まずコンポーネント登録用のモジュールを作成してみる。
+
+```
+$ ionic g
+? What would you like to generate? module
+? Name/path of module: shared
 ```
 
-これで`/{{p.ID}}`と`:articleId`が結びつくようになり、結びついたときに`ArticlePage`を呼び出す。
+これで`src/app/shared.shared.module.ts`が作成される。Ionicのコンポーネントを利用したいので`@NgModule`の`imports`に`IonicModule`を追加しておいてね。
 
-最後に`ArticlePage`内で`:articleId`を呼び出す方法を示す。
-といっても以下のように`src/app/article/article.page.ts`を修正するだけ。
+```diff
+  import { NgModule } from '@angular/core';
+  import { CommonModule } from '@angular/common';
++ import { IonicModule } from '@ionic/angular';
+
+  @NgModule({
+  declarations: [],
+  imports: [
++   IonicModule,
+    CommonModule
+  ]
+  })
+  export class SharedModule { }
+```
+同様に`home.module.ts`と`article.module.ts`に`SharedModule`を追加することでこの後作成・追加するコンポーネントを利用することができるようになる。
+
+登録するmoduleができたので、さっそくコンポーネントを作ってみる。
+
+```
+$ ionic g
+? What would you like to generate? component
+? Name/path of component: shared/wp-head
+```
+
+`src/app/shared/wp-head/`に作成されたコンポーネントが配置されるのでこれを`SharedModule`に登録する。
 
 ```typescript
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
+import { WpHeadComponent } from './wp-head/wp-head.component';
+
+@NgModule({
+  // 使用コンポーネントの宣言
+  declarations: [WpHeadComponent],
+  // 他コンポーネントで使用可能にする宣言
+  exports: [ WpHeadComponent ],
+  imports: [
+    IonicModule,
+    CommonModule
+  ]
+})
+export class SharedModule { }
+```
+
+んじゃ、実際にコンポーネントを作っていきますか。`src/app/shared/wp-head/wp-head.component.html`を以下に書き換える。
+
+```html
+<ion-card-header>
+  <ion-card-subtitle>
+    {{date | date: "yyyy年MM月dd日"}}
+  </ion-card-subtitle>
+  <ion-card-title>{{title}}</ion-card-title>
+</ion-card-header>
+```
+
+titleとdateは呼び出した側が書き換えられるようにしたいので、`src/app/shared/wp-head/wp-head.component.ts`にInputを追加する。
+
+```typescript
+import { Component, OnInit, Input } from '@angular/core';
 
 @Component({
-  selector: 'app-article',
-  templateUrl: './article.page.html',
-  styleUrls: ['./article.page.scss'],
+  selector: 'app-wp-head', // ここで指定した値がタグ名になる
+  templateUrl: './wp-head.component.html',
+  styleUrls: ['./wp-head.component.scss'],
 })
-export class ArticlePage implements OnInit {
-  ID: number; // 取得した値を格納する変数
+export class WpHeadComponent implements OnInit {
+  // プロパティの追加
+  @Input() title: string;
+  @Input() date: string;
 
-constructor(public route: ActivatedRoute) { }
+  constructor() { }
 
-  ngOnInit() {
-    this.route.paramMap
-      .subscribe((params: ParamMap) => {
-        // paramsに含まれるarticleIdを数値に変換して格納する
-        this.ID = parseInt(params.get('articleId'), 10);
-      });
-  }
+  ngOnInit() {}
 }
 ```
 
-これで記事のIDを受け取ることができので、あとは[Ionicで外部APIをたたく](#Ionicで外部APIをたたく)でやったようにAPIをたたいて変数に格納し、画面に表示すれば出来上がり。
-
-余談だが、WordPressのcontentにはHTMLが格納されているので今まで通り`{{post.content}}`で表示するとHTMLがサニタイズされて表示される。(HTMLタグ等がそのまま表示される。)サニタイズせずに表示するためにはcontentを表示する`<div>`タグのattributeに`[innerHTML]="post.content"`と記載することでHTMLを反映した表示にすることができる。ただし、HTMLをそのまま反映するような処理にすると悪意のあるコードを仕込まれてセキュリティーの問題につながるため、注意する。
-
-## 出来上がったアプリケーション
-
-というわけでWordPressから記事を取得して一覧、詳細を表示するアプリケーションができました。
-
-[記事一覧画面作成作業内容](https://github.com/yosshi-4989/advent_calender_2019/compare/16966c67a6a18617a15d12d751c1141b6ddea141..e407d9cf94d0089f5b9cbb05ff85e6d12708dece)と[記事詳細画面作成作業内容](https://github.com/yosshi-4989/advent_calender_2019/compare/e407d9cf94d0089f5b9cbb05ff85e6d12708dece..8c06ff35a508a4d301a120e275908b9e0312c4b4)のdiffとおまけで[UXを高める修正](https://github.com/yosshi-4989/advent_calender_2019/compare/8c06ff35a508a4d301a120e275908b9e0312c4b4..59f0a2ce7f53dcb8d01f56b15c95c68d4722abfc)があったのでそれぞれのdiffへリンクしておく。
-
-画面はこんな感じになった。左が一覧画面で右が詳細画面。
-
-![WordPress記事表示アプリケーション](https://github.com/yosshi-4989/advent_calender_2019/blob/images/wordpress-application.png)
+ここまでやることで、`<app-wp-head title="{{p.title}}" date="{{p.date}}"></app-wp-head>`と指定すれば呼び出すことができるようになる。
+`home.page.html`と`article.page.html`の該当箇所を置換すれば完了！
 
 ## おわりに
 
-今日はアプリケーション開発がメインだったけど、開発内容を記載するというより、機能を実装する上で主題となっている項目に着目した記事になるように意識してみた。ソースコードそのまま載せるよりも特定の項目に焦点を当てていこうかなって思った。
+はい、ということでリファクタリング回終了。これでコードの共通化、型の共通化、タグの共通化ができるようになったね！やったぜ！
+<br>実はモジュールをまとめよう、ってセクションもあったんだけど、ArticlePageに関するRoutingをHomePageに移動させるだけってのと力尽きた(こっちがメイン)ので止めた。
 
-書籍も4章まで終わった。5章はリファクタリング。コードを共通化したりモジュールを統一したりするっぽい？明日も楽しみだ。
+明日はCapacitorを使ったモバイルアプリ開発になる…はず？あれ？モバイルか。うーん、スキップするかも！w
+
+それではまた明日！
 
 # アドベントカレンダー
 
@@ -204,7 +249,7 @@ constructor(public route: ActivatedRoute) { }
 |12/03|[Ionic環境構築](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-03)|
 |12/04|[Ionicアプリが表示されるまでと最初のサンプルプロジェクト](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-04)|
 |12/05|[WordPressと連携してみる](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-05)|
-|12/06|[リファクタリング！](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-06)|
+|12/06|[リファクタリングしよう！](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-06)|
 |12/07|[Capacitorを使ってみる](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-07)|
 |12/08|[Firebaseを使ってチャットアプリ①](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-08)|
 |12/09|[Firebaseを使ってチャットアプリ②](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-09)|
