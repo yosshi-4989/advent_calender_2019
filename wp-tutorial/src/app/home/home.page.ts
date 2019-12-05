@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { LoadingController } from '@ionic/angular';
+import { WordpressService } from '../wordpress.service';
 
 @Component({
   selector: 'app-home',
@@ -16,7 +16,7 @@ export class HomePage {
   }[] = [];
 
   constructor(
-    public http: HttpClient,
+    public wordpress: WordpressService,
     public loadingController: LoadingController,
   ) {}
 
@@ -29,8 +29,7 @@ export class HomePage {
       // データが存在しない場合、読み込み完了までローディングを表示
       await loading.present();
     }
-    this.http.get('https://public-api.wordpress.com/rest/v1.1/sites/ionicjp.wordpress.com/posts/')
-      .subscribe(data => {
+    this.wordpress.getPosts().subscribe(data => {
         this.posts = data['posts'];
         // ローディング画面の非表示
         loading.dismiss();
