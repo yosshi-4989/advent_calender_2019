@@ -14,8 +14,7 @@ Capacitorを使ったアプリ開発をやるといったな。すまんあり�
 
 1. [非同期処理とは](#非同期処理とは)
 1. [Promiseによる非同期処理](#Promiseによる非同期処理)
-1. [async/await](#)
-1. [Promiseとasync/awaitの比較](#Promiseとasync/awaitの比較)
+1. [async/await](#async/await)
 1. [おわりに](#おわりに)
 
 ## 非同期処理とは
