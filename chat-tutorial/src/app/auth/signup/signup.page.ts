@@ -7,6 +7,7 @@ import { AuthService } from '../auth.service';
   styleUrls: ['./signup.page.scss'],
 })
 export class SignupPage implements OnInit {
+  loading = false;
   login: {
     email: string,
     password: string,
@@ -21,6 +22,8 @@ export class SignupPage implements OnInit {
   }
 
   signUp() {
-    this.auth.authSignUp(this.login);
+    this.loading = true;
+    this.auth.authSignUp(this.login)
+      .finally(() => this.loading = false);
   }
 }
