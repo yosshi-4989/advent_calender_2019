@@ -41,6 +41,10 @@ export class AuthService {
       });
   }
 
+  getUserId(): string {
+    return this.afAuth.auth.currentUser.uid;
+  }
+
   async alertError(e) {
     if (firebaseError.hasOwnProperty(e.code)) {
       e = firebaseError[e.code];

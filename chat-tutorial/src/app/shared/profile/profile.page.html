@@ -9,7 +9,7 @@
     <ion-title>プロフィール</ion-title>
     <!-- 登録(未実装)ボタン -->
     <ion-buttons slot="end">
-      <ion-button>登録</ion-button>
+      <ion-button (click)="updateProfile()" [disabled]="!f.form.valid || (!photo && !this.user.photoDataUrl)">登録</ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
