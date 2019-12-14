@@ -4,7 +4,7 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[プロジェクトの作成]
+# 本日のコンテキスト[タイトル画面の作成 ~ 縦方向のdivの位置調整 ~]
 
 アドベントカレンダー全部俺2019...をやりたかった、の13日目です。
 <br>今日からプランニングポーカーを作っていきます。
@@ -47,7 +47,7 @@ $ npm install firebase @angular/fire # Firebaseと連携するためのパッケ
 
 気になるフォントをクリックして、ロゴの文字を入力して、「Create Logo」で完成です。
 
-![作成したロゴ](https://github.com/yosshi-4989/planning-poker/tree/master/src/assets/title-logo.png)
+![作成したロゴ](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-14/images/title-logo.png)
 
 よさそうじゃね？いまいちかな？よくわからん。とりあえずこれで行きます。
 
@@ -77,7 +77,7 @@ $ npm install firebase @angular/fire # Firebaseと連携するためのパッケ
 
 出来上がりはこんな感じです。
 
-![タイトル画面1](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-13/images/title-view1.png)
+![タイトル画面1](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-14/images/title-view1.png)
 
 うーん…、ダサい？なんか上によってるし。せめて真ん中によってればなぁ…。
 <br>(ちなみに全画面のブラウザで見るともっとやばい)
@@ -122,7 +122,7 @@ $ npm install firebase @angular/fire # Firebaseと連携するためのパッケ
 
 こんな感じになりました。
 
-![タイトル画面2](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-13/images/title-view2.png)
+![タイトル画面2](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-14/images/title-view2.png)
 
 うん、まぁ、ましになったと思います。(フォントのせいかボタンが浮いてたりしてますが…)
 
@@ -155,7 +155,7 @@ $ npm install firebase @angular/fire # Firebaseと連携するためのパッケ
 これだと確かに真ん中に配置できるが、divの要素のサイズも小さくなっているのかタイトルロゴも小さくなってしまったので断念しました。
 (topのみも試しましたが、左にくっつてしまうのでダメでした)
 
-![タイトルロゴが小さい](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-13/images/title-view-omake.png)
+![タイトルロゴが小さい](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-14/images/title-view-omake.png)
 
 以上おまけ終わり。
 
