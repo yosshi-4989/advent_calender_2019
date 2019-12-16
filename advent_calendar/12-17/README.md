@@ -76,12 +76,12 @@
 
 こんな風になりました！
 
-![メニュー1](https://github.com/yosshi-4989/advent_calender_2019/tree/master/advent_calendar/12-17/images/menu1.png)
+![メニュー1](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-17/images/menu1.png)
 
 これで行けそうですね。ただ、メニューの表示方法が個人的に好きではないので変更してみます。
 <br>表示方法を変更する際には`<ion-menu>`にtypeプロパティを設定することで変更できるようです。typeには"overlay", "reveal", "push"の三種類あるようです。
 
-![メニュー2](https://github.com/yosshi-4989/advent_calender_2019/tree/master/advent_calendar/12-17/images/menu2.png)
+![メニュー2](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-17/images/menu2.png)
 
 個人的には"overlay"か"push"が好きなので今回は"overlay"で実装してみます。
 
@@ -162,7 +162,7 @@
         ・・・
 ```
 
-![メニュー](https://github.com/yosshi-4989/advent_calender_2019/tree/master/advent_calendar/12-17/images/menu3.png)
+![メニュー](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-17/images/menu3.png)
 
 ## おわりに
 
