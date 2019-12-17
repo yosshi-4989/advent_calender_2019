@@ -222,7 +222,7 @@ room/
 
 これで出来上がりです。
 
-![ヘッダの色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/list-page2.png)
+![ヘッダの色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/list-page3.png)
 
 ボタンの見た目が強くてヘッダが弱く見えてしまう…かな？
 
