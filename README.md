@@ -166,7 +166,7 @@ roomページに以下の行を追加して見た目を確認します。
   </ion-card>
 ```
 
-![色付けた](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-19/images/card1.png)
+![色付けた](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-19/images/card2.png)
 
 最後に、`isOpen`で表示非表示を切り替えます。
 
