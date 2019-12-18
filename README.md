@@ -4,348 +4,199 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[ルーム一覧画面の作成]
+# 本日のコンテキスト[カスタムコンポーネントでトランプのテンプレートを作成する]
 
-アドベントカレンダー全部俺2019...をやりたかった、の17日目です。
-<br>今日は一覧画面を作成していきます。
+アドベントカレンダー全部俺2019...をやりたかった、の18日目です。
+<br>今日はプランニングポーカーのカードのモジュールを作成していきます。
 
 ## 目次
 
-1. [見た目の調整](#見た目の調整)
-1. [ルーム一覧表示](#ルーム一覧表示)
-1. [プレイルームページの作成(画面遷移前準備)](#プレイルームページの作成(画面遷移前準備))
-1. [画面遷移](#画面遷移)
+1. [はじめに(機能の実装漏れ)](#はじめに(機能の実装漏れ))
+1. [カスタムコンポーネントの作成](#カスタムコンポーネントの作成)
+1. [ポーカーのカードを作成](#ポーカーのカードを作成)
 1. [おわりに](#おわりに)
 
-## 見た目の調整
+## はじめに(機能の実装漏れ)
 
-一覧ページの背景色を決めていきます。
+本題に入る前に昨日の作業内容に漏れがあり、バグになってしまっている個所を発見しましたので訂正をしておきます。(管理の仕方が悪いから過去記事の追記がめんどい)
 
-タイトル画面を作成するときに、`<ion-content>`のオプションで`color="success"`をさらっと使用していましたが、これは`src/theme/variables.scss`で定義されているIonicアプリのテーマカラーとなります。このテーマカラーを追加して、一覧ページ(とついでにログイン画面)の背景色を変更していきます。
-
-テーマカラーの追加にはいろいろ設定しないといけないことがありますが、[Ionicのドキュメントの配色に関するページ内](https://ionicframework.com/jp/docs/theming/colors#new-color-creator)で、作りたい色と名前を入力するとコピペすればよいコードを生成してくれます。
-
-![New Color Creator](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/new-color-creator.png)
-
-精製されたコードを書き込んでいきます。
-
-```scss
-// src/theme/variables.scss
-  :root {
-    ・・・
-+   --ion-color-playmat: #02a57a;
-+   --ion-color-playmat-rgb: 2,165,122;
-+   --ion-color-playmat-contrast: #ffffff;
-+   --ion-color-playmat-contrast-rgb: 255,255,255;
-+   --ion-color-playmat-shade: #02916b;
-+   --ion-color-playmat-tint: #1bae87;
-  }
-
-+ .ion-color-playmat {
-+   --ion-color-base: var(--ion-color-playmat);
-+   --ion-color-base-rgb: var(--ion-color-playmat-rgb);
-+   --ion-color-contrast: var(--ion-color-playmat-contrast);
-+   --ion-color-contrast-rgb: var(--ion-color-playmat-contrast-rgb);
-+   --ion-color-shade: var(--ion-color-playmat-shade);
-+   --ion-color-tint: var(--ion-color-playmat-tint);
-+ }
-```
-
-では早速使ってみましょう。
-
-```html
-// src/app/poker/list.list.page.html
-    <!-- the main content -->
-    <ion-content id="menu-content">
-      <ion-header>
-        <ion-toolbar>
-          <ion-buttons slot="start">
-            <ion-menu-button></ion-menu-button>
-          </ion-buttons>
-          <ion-title>list</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
--     <ion-content>
-+     <ion-content color="playmat">
-      </ion-content>
-    </ion-content>
-```
-
-こんな風になりました。
-
-![一覧画面の背景色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/list-page.png)
-
-ついでにタイトル画面も変更しましょう。
-
-![タイトル画面の背景色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/title-page.png)
-
-お！思ったよりそれっぽくなった？ええやん。
-
-せっかくなのでヘッダも統一して文字色(contrastを参照している模様)をタイトルの文字色に近くしてみる。(ついでにヘッダのタイトルも変更しておく)
-
-```scss
-// src/theme/variables.scss
-  :root {
-    ・・・
-    --ion-color-playmat: #02a57a;
-    --ion-color-playmat-rgb: 2,165,122;
--   --ion-color-playmat-contrast: #ffffff;
--   --ion-color-playmat-contrast-rgb: 255,255,255;
-+   --ion-color-playmat-contrast: #f7f700;
-+   --ion-color-playmat-contrast-rgb: 247,247,0;
-    --ion-color-playmat-shade: #02916b;
-    --ion-color-playmat-tint: #1bae87;
-  }
-```
-```html
-// src/app/poker/list.list.page.html
-    <!-- the main content -->
-    <ion-content id="menu-content">
-      <ion-header>
--       <ion-toolbar>
-+       <ion-toolbar color="playmat">
-          <ion-buttons slot="start">
-            <ion-menu-button></ion-menu-button>
-          </ion-buttons>
--         <ion-title>list</ion-title>
-+         <ion-title>ルーム一覧</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
-      <ion-content color="playmat">
-      </ion-content>
-    </ion-content>
-```
-
-![ヘッダの色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/list-page2.png)
-
-うーん？やりすぎちゃったかな？まぁいいか。いったんこれで行ってみます！
-
-## ルーム一覧表示
-
-それではルーム一覧を画面に表示する処理を作成していきましょう。
-
-事前に以下の構成でルームを作成しておきます。
-```
-room/
-  {roomId}/
-    - createDate: [number]
-    - roomName: [name]
-```
-
-では処理の作成に移ります。
-<br>まずFirebaseに登録されているルームリストを取得する処理を作ります。
+ルーム一覧画面へのルーティングを修正する際に、ログイン成功後のリダイレクト先の修正が漏れていたため、ログインした際にRoomページに遷移していました。
+<br>以下のように修正すれば想定通りの動作になります。
 
 ```typescript
-// src/app/shared/firebase.service.ts
-  import { Injectable } from '@angular/core';
-- import { AngularFirestoreDocument, AngularFirestore } from '@angular/fire/firestore';
-+ import { AngularFirestoreDocument, AngularFirestore, AngularFirestoreCollection } from '@angular/fire/firestore';
-  import { first } from 'rxjs/operators';
-+ import { Observable } from 'rxjs';
-  ・・・
-+ export interface IRoomInfo {
-+   roomName: string;
-+   createDate: number;
-+ }
-
-+ export interface IRoom extends IRoomInfo {
-+   roomId: string;
-+ }
-
-  ・・・
-  export class FirestoreService {
-    userDoc: AngularFirestoreDocument<IUser>;
-+   roomCollection: AngularFirestoreCollection<IRoomInfo>;
-
--   constructor(public af: AngularFirestore) { }
-+   constructor(public af: AngularFirestore) {
-+     this.roomCollection = this.af.collection<IRoomInfo>('room', ref => ref.orderBy('createDate', 'desc'));
-+   }
-    ・・・
-+   roomListInit(): Observable<IRoom[]> {
-+     return this.roomCollection.valueChanges({idField: 'roomId'});
-+   }
-  }
-```
-
-次に、一覧ページからリストを参照できるようにします。
-
-```typescript
-// src/app/poker/list/list.page.ts
-・・・
-  import { AuthService } from 'src/app/auth/auth.service';
-- import { FirestoreService, IUser } from 'src/app/shared/firestore.service';
-+ import { FirestoreService, IUser, IRoom } from 'src/app/shared/firestore.service';
-  import { ProfilePage } from 'src/app/shared/profile/profile.page';
-+ import { Observable } from 'rxjs';
-  ・・・
-  export class ListPage implements OnInit {
-
-    uid: string;
-    user: IUser;
-+   roomList: Observable<IRoom[]>;
-    ・・・
-    async ngOnInit() {
-      ・・・
-+     this.roomList = this.firestore.roomListInit();
+// src/app/auth/auth.service.ts
+    // 登録して一覧ページへ遷移
+    authSignUp(login: { email: string, password: string}) {
+      return this.afAuth.auth
+        .createUserWithEmailAndPassword(login.email, login.password)
+-       .then(() => this.navController.navigateForward('poker/list'))
++       .then(() => this.navController.navigateForward('poker'))
+        .catch(error => {
+          this.alertError(error);
+          throw error;
+        });
+    }
+    // ログインして一覧ページへ遷移
+    authSignIn(login: { email: string, password: string}) {
+      return this.afAuth.auth
+        .signInWithEmailAndPassword(login.email, login.password)
+-       .then(() => this.navController.navigateForward('poker/list'))
++       .then(() => this.navController.navigateForward('poker'))
+        .catch(error => {
+          this.alertError(error);
+          throw error;
+        });
     }
 ```
 
-最後に取得したルーム一覧を表示する。
+以上訂正でした。
 
-```html
-// src/app/poker/list/list.page.html
-    ・・・
-    <!-- the main content -->
--   <ion-content id="menu-content">
-+   <ion-content id="menu-content" scrollY="false"> <!-- このレベルでY方向のスクロールは不要なので外す -->
-      <ion-header>
-        <ion-toolbar color="playmat">
-          <ion-buttons slot="start">
-            <ion-menu-button></ion-menu-button>
-          </ion-buttons>
-          <ion-title>ルーム一覧</ion-title>
-        </ion-toolbar>
-      </ion-header>
+## カスタムコンポーネントの作成
 
-      <ion-content color="playmat">
-+       <ion-card color="primary" *ngFor="let room of roomList | async; trackBy: trackByFn">
-+         <ion-card-content>
-+           <strong>{{room.roomName}}</strong>
-+         </ion-card-content>
-+       </ion-card>
-      </ion-content>
-    </ion-content>
-```
+それではポーカーのカードを作っていきます！
 
-これで出来上がりです。
-
-![ヘッダの色の変更](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-18/images/list-page3.png)
-
-ボタンの見た目が強くてヘッダが弱く見えてしまう…かな？
-
-## プレイルームページの作成(画面遷移前準備)
-
-ルーム一覧からルームを選択して遷移する処理を作成していきたいと思いますが、そのためにはルームページを作成する必要があるので、遷移実装前に作成しておきます。
+まずはコンポーネントを生成します。
 
 ```
-$ ionic g page poker/room
+$ ionic g component shared/poker-card
 ```
 
-いつも通り、不要なファイルを削除して自動で追加されたルーティングを削除しておきます。(ついでにリストをpokerのルートにしておく)
-
-```
-$ rm src/app/poker/room/room-routing.module.ts src/app/poker/room/room.module.ts
-```
+このコンポーネントをSharedモジュールに登録します。
 
 ```typescript
-// src/app/app-routing.module.ts
+// src/app/shared/shared.module.ts
   ・・・
-  // ついでにルーティングの修正
-- const redirectLoggedIn = () => redirectLoggedInTo(['poker/list']);
-+ const redirectLoggedIn = () => redirectLoggedInTo(['poker']);
-  ・・・
--   {
--     path: 'room',
--     loadChildren: () => import('./poker/room/room.module').then( m => m.RoomPageModule)
--   },
-```
-
-最後に、pokerのモジュールにルーティングを追加する。(ついでにリストをpokerのルートにしておく)
-
-```typescript
-// src/app/poker/poker.module.ts
-  ・・・
-  import { RoomPage } from './room/room.page';
-
-  const routes: Routes = [
-    {
--     path: 'list',
-+     path: '',
-      component: ListPage
--   }
-+   },
-+   {
-+     path: ':roomId', // roomIdで引数を受け渡す設定
-+     component: RoomPage
-+   }
-  ];
++ import { PokerCardComponent } from './poker-card/poker-card.component';
 
   @NgModule({
--   declarations: [ListPage],
-+   declarations: [ListPage, RoomPage],
+-   declarations: [ProfilePage],
++   declarations: [ProfilePage, PokerCardComponent],
++   exports: [PokerCardComponent],
     ・・・
 ```
 
-routingでroomIdを受け渡すように変更したので、room側で受け取れるようにします。
+これでsharedモジュールを経由してコンポーネントにアクセスできるようになりました。
+
+## ポーカーのカードを作成
+
+それでは作成したコンポーネントにカードを格納していきます。
+
+まずカードを描画する際に必要なデータを受け取るようにします。
 
 ```typescript
-  import { Component, OnInit } from '@angular/core';
-+ import { ActivatedRoute, ParamMap } from '@angular/router';
+// src/app/shared/poker-card/poker-card.component.ts
+- import { Component, OnInit } from '@angular/core';
++ import { Component, OnInit, Input } from '@angular/core';
+  ・・・
+  export class PokerCardComponent implements OnInit {
++   @Input() userName: string;
++   @Input() number: string; // 数字以外も入るため文字列型
++   @Input() userColor: string; // カード色
++   @Input() isOpen: boolean;
+    ・・・
+```
 
-  @Component({
-    selector: 'app-room',
-    templateUrl: './room.page.html',
-    styleUrls: ['./room.page.scss'],
-  })
-  export class RoomPage implements OnInit {
-+   roomId: string;
+まず、カード状の物を作ります。
 
--   constructor() { }
-+   constructor(public route: ActivatedRoute) { }
+```scss
+.p-card {
+  border: solid 1px #4e4e4e;
+  border-radius: 10px;
+  width: 70px;
+  height: 100px;
+  float: left;
+  margin: 5px;
+}
+
+.middle-center {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  line-height: 100px;
+}
+```
+
+```html
+<ion-card class="p-card ion-text-center">
+  <ion-card-title class="middle-center">{{number}}</ion-card-title>
+</ion-card>
+<ion-card class="p-card ion-text-center">
+  <ion-icon class="middle-center" name="moon" size="large"></ion-icon>
+</ion-card>
+```
+
+roomページに以下の行を追加して見た目を確認します。
+
+```html
+  <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="true"></app-poker-card>
+```
+
+![最初](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-19/images/card1.png)
+
+次に色を付けていきます。このとき、裏面は`color`を利用します。表面は`ngStyle`でTypescriptで定義したハッシュをstyleとして定義できるので、これを利用します。
+
+```typescript
+  export class PokerCardComponent implements OnInit {
+    @Input() userName: string;
+    @Input() number: string; // 数字以外も入るため文字列型
+    @Input() userColor: string; // カード色
+    @Input() isOpen: boolean;
++   frontStyle;
+
+    constructor() { }
 
     ngOnInit() {
-+     this.route.paramMap.subscribe((params: ParamMap) => this.roomId = params.get('roomId'));
++     // userColorのテーマの値を取得する
++    this.frontStyle = {color: 'var(--ion-color-' + this.userColor + ')'};
     }
-
   }
 ```
 
-検証用にroomIdを確認できるようにしておきます。
-
 ```html
-<ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/poker"></ion-back-button>
-    </ion-buttons>
-    <ion-title>room</ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content>
-  {{roomId}}
-</ion-content>
+  <ion-card class="p-card ion-text-center">
+-   <ion-card-title class="middle-center">{{number}}</ion-card-title>
++   <ion-card-title class="middle-center" [(ngStyle)]="frontStyle">{{number}}</ion-card-title>
+  </ion-card>
+- <ion-card class="p-card ion-text-center">
++ <ion-card class="p-card ion-text-center" [color]="userColor">
+    <ion-icon class="middle-center" name="moon" size="large"></ion-icon>
+  </ion-card>
 ```
 
-これで /poker/[roomId]で接続してroomIdが表示されればOKです。
+![色付けた](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-19/images/card1.png)
 
-## 画面遷移
-
-最後にルーム一覧から選択したルームに遷移できるようにして終わります。
+最後に、`isOpen`で表示非表示を切り替えます。
 
 ```html
-    <ion-content color="playmat">
--     <ion-card button="true" color="primary" *ngFor="let room of roomList | async; trackBy: trackByFn">
-+     <ion-card button="true" color="primary" *ngFor="let room of roomList | async; trackBy: trackByFn" routerLink="/poker/{{room.roomId}}">
-        <ion-card-content>
-          <strong>{{room.roomName}}</strong>
-        </ion-card-content>
-      </ion-card>
-    </ion-content>
+- <ion-card class="p-card ion-text-center">
++ <ion-card class="p-card ion-text-center" *ngIf="isOpen">
+    <ion-card-title class="middle-center" [(ngStyle)]="frontStyle">{{number}}</ion-card-title>
+  </ion-card>
+- <ion-card class="p-card ion-text-center" [color]="userColor">
++ <ion-card class="p-card ion-text-center" [color]="userColor" *ngIf="!isOpen">
+    <ion-icon class="middle-center" name="moon" size="large"></ion-icon>
+  </ion-card>
 ```
 
-これでそれぞれのroomIdが表示されるページに遷移できれば完成です！
+roomの`isOpen`の値を変更して表裏が切り替わっていることを確認できればOKです。
 
 ## おわりに
 
-これでルーム一覧画面の作成が終わりました！あとはプランニングポーカーを遊ぶページを作ればとりあえず遊べるものができますね！
-<br>何とかアドベントカレンダー中に完成ができそうでちょっと安心している反面、気を抜くと毎日更新に失敗するかもなので引き締めていきます！
-<br>明日はプランニングポーカーの実装に入る前に、カードのコンポーネントを作成してみようかなと思ってます。
+これでカードコンポーネントができたので、実装するときは一行呼び込むだけでOKになりました！やったぜ！
 
-以上！それではまた明日！
+軽めにやろうと思ったら結構かかったパート2！ちょっといろいろやりたいことも残ってるけど、いったんここまでにします。後々ユーザー名は不要にするかも。
+
+やりたかったことリスト
+- isOpenの変化をトリガーにめくる機能
+- 名前を表示する
+- サイズ固定ではなく、ある程度ウィンドウサイズに依存したサイズになる
+
+後々はユーザー情報に色を選択させて、ユーザーの好きに色を選べるようになったらいいなぁ、とか考えてます。
+
+以上！明日は、ポーカーのページを作っていきたいな！2日に分けるかも！<br>それではまた明日！
 
 # アドベントカレンダー
 
@@ -368,7 +219,7 @@ routingでroomIdを受け渡すように変更したので、room側で受け取
 |12/16|[プロフィール編集画面の作成](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-16)|
 |12/17|[Split Paneでメニューを実装してみる！](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-17)|
 |12/18|[ルーム一覧画面の作成](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-18)|
-|12/19|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-19)|
+|12/19|[カスタムコンポーネントでトランプのテンプレートを作成する](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-19)|
 |12/20|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-20)|
 |12/21|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-21)|
 |12/22|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-22)|
