@@ -4,84 +4,144 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[プレイルームのレイアウト]
+# 本日のコンテキスト[カードプレイエリア]
 
-アドベントカレンダー全部俺2019...をやりたかった、の19日目です。
-<br>今日はプレイルームのレイアウトを構築していきます。
+一時中断していたけど再開します！<br>
+アドベントカレンダー全部俺2019...をやりたかった、の20日目です。
+<br>今日はカードプレイエリアの作成をしていきます。
 
 ## 目次
 
-1. [プレイルームの構成](#プレイルームの構成)
+1. [カード配置(グリッドレイアウト)](#グリッドレイアウト)
+1. [ユーザー情報を載せる](#ユーザー情報を載せる)
+1. [手札配置](#手札配置)
 1. [おわりに](#おわりに)
 
-## プレイルームの構成
+## グリッドレイアウト
 
-余裕があれば解説いれる
+ユーザーが選択したカードをプレイエリアに表示する機能を作っていきます。
 
-```scss
-.split-pane-visible > .split-pane-side {
-  max-width: 50%;
-}
-.custom-menu {
-  --width: 80%;
-}
-.playarea {
-  padding-top: 40px;
-}
+プレイエリア周辺に(テーブルを囲うように)ユーザーの表示エリアがあったほうがかっこいい気がしますが、今回は勉強(と手間)を考慮してグリッドレイアウトでただカードを並べるだけの機能を作ってみます。
+
+ということで、[Ionicのドキュメント](https://ionicframework.com/jp/docs/layout/grid)を参考に作っていきます。
+
+`src\app\poker\room\room.page.html`を以下のように編集する。
+
+```diff
+-        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
++        <!-- カード表示エリア -->
++        <ion-grid>
++          <ion-row>
++            <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]"  size-lg="2" size-md="3" size-sm="2" size="3">
++              <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
++            </ion-col>
++          </ion-row>
++        </ion-grid>
 ```
 
-```html
-<ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button defaultHref="/poker"></ion-back-button>
-    </ion-buttons>
-    <ion-title>room</ion-title>
-  </ion-toolbar>
-</ion-header>
+するとこんな感じになります。
 
-<ion-content>
-  <ion-split-pane when="md">
-    <!--  チャットエリア  -->
-    <ion-menu side="end" class="custom-menu">
-      <ion-content>
-      </ion-content>
+![グリッド表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/grid.png)
 
-      <ion-footer>
-        <ion-textarea placeholder="Text Area"></ion-textarea>
-      </ion-footer>
-    </ion-menu>
+`[1,1,1,1,1,1,1,1,1]`は9枚のカードを表示するために適用に書いているだけなので気にしないでください。
 
-    <!--  プレイエリア  -->
-    <div class="ion-page" main>
-      <ion-content color="playmat" class="ion-padding-top">
-        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-        <ion-fab horizontal="end" vertical="bottom" slot="fixed">
-          <ion-menu-toggle>
-            <ion-fab-button color="primary">
-              <ion-icon name="chatboxes"></ion-icon>
-            </ion-fab-button>
-          </ion-menu-toggle>
-        </ion-fab>
-      </ion-content>
+メインは`size-lg="2" size-md="3" size-sm="2" size="3"`です。
+`size`はBootstrapの`col`に相当する、といえば伝わるでしょうか？
+表示領域を12分割したうちのいくつ領域を使用するかを設定することができます。
+`-xx`はそれぞれのウィンドウ(表示領域ではなく)サイズに応じてsizeを指定することができるようになります。これによって、ウィンドウの幅に応じてカードの表示枚数を変更することができます。
 
-      <ion-footer>
-        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-      </ion-footer>
-    </div>
-  </ion-split-pane>
-</ion-content>
+今回だと、基本は1行4枚表示していて、576px(-sm)以上になると6枚、768px(-md)以上だとチャットエリアが常時表示されるので4枚に戻して、992px(-lg)以上ではまた広くなるので6枚表示に変える、という設定になっています。
+
+## ユーザー情報を載せる
+
+これでカードを並べることができましたが、このままだとどのカードが誰のカードかわからないので、ユーザー名を表示するようにしてみます。
+
+カードコンポーネントに持たせるつもりで変数を用意してましたが、カートの下に名前を表示したくなったので、そちらの変数は今回利用しないことにします。
+
+それでは以下のようにユーザー名を配置しましょう。
+
+```diff
+           <ion-row>
+             <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]" size-lg="2" size-md="3" size-sm="2" size="3">
+               <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
++              <!-- ユーザー名 -->
++              <div color="primary" class="ion-text-center text-ellipse">uname</div>
+             </ion-col>```
+```
+長い名前は省略表示して表示したいので、CSSを追加します。
+`src/app/poker/room/room.page.scss`
+
+```diff
++
++.text-ellipse {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
 ```
 
-![ウィンドウ](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-20/images/playroom.png)
-![スマホ](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-20/images/playroom-phone.png)
-![チャット広げる](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-20/images/playroom-phone-open-chat.png)
+こうすると以下のようになります。
+
+![ユーザー名追加](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/add-user-name.png)
+
+※footerのカードが中央に来ているのはカードコンポーネントのスタイルを変更しているからです。(ウィンドウサイズを変更すると左に寄っていたので)
+
+背景とか文字色とか変更したほうがいいのでしょうけど、めんどいので今回はこれで行きます。
+
+これでプレイエリアの見た目は大体固まりました！やったね！
+
+## 手札配置
+
+最後にサクッと手札をfooterに追加しておきましょう。
+`src/app/poker/room/room.page.html`
+```diff
+       <ion-footer>
+-        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
++        <div scrollX="true" class="hand-area">
++          <app-poker-card class="hand-card" userName="uname" number="{{num}}" userColor="primary" [isOpen]="true"  *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?']"></app-poker-card>     
++        </div>
+       </ion-footer>
+```
+
+手札を横に並べてスクロールできるようにCSSを記載します。
+`src/app/poker/room/room.page.scss`
+
+```diff
++.hand-area {
++  height: 120px;
++  display: flex;
++  display: -webkit-flex;
++
++  .hand-card {
++    float: left;
++    margin: 5px;
++  }
++}
++
++// 今回はXだけあればいいけど、両方定義しておく
++div[scrollx=true],div[scrolly=true] {
++  position: relative;
++  overflow: hidden;
++}
++
++div[scrollx=true] {
++  overflow-x: auto;
++}
++
++div[scrolly=true] {
++  overflow-y: auto;
++}
+```
+
+こんな感じになります。
+![プレイエリア](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/playarea.png)
 
 ## おわりに
 
-つかれた
+Responsive Gridの実装に詰まったのとプライベートが忙しくなったのが影響して途中で止まってましたが、やっと続きができました。
 
-明日はたぶんプレイエリアのコンテンツ
+今回の休み中に一気に進めたいなぁ、と思ってます。
+次の項目は、プランニングポーカーのゲーム部分を進めていきたいですね。
 
 # アドベントカレンダー
 
@@ -106,7 +166,7 @@
 |12/18|[ルーム一覧画面の作成](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-18)|
 |12/19|[カスタムコンポーネントでトランプのテンプレートを作成する](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-19)|
 |12/20|[プレイルームのレイアウト](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-20)|
-|12/21|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-21)|
+|12/21(02/22)|[カードプレイエリア](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-21)|
 |12/22|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-22)|
 |12/23|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-23)|
 |12/24|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-24)|
