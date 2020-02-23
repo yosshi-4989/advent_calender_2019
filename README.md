@@ -4,144 +4,252 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[カードプレイエリア]
+# 本日のコンテキスト[カード提出機能]
 
-一時中断していたけど再開します！<br>
-アドベントカレンダー全部俺2019...をやりたかった、の20日目です。
-<br>今日はカードプレイエリアの作成をしていきます。
+再開して2日目！<br>
+アドベントカレンダー全部俺2019...をやりたかった、の21日目です。
+<br>今日は提出カード情報をFirebaseに登録する処理を作成していきます。
 
 ## 目次
 
-1. [カード配置(グリッドレイアウト)](#グリッドレイアウト)
-1. [ユーザー情報を載せる](#ユーザー情報を載せる)
-1. [手札配置](#手札配置)
+1. [入室ユーザー登録](#入室ユーザー登録)
+1. [カード提出機能]](#カード提出機能)
+1. [提出カード一覧表示](#提出カード一覧表示)
+1. [他ユーザーの表示非表示](#他ユーザーの表示非表示)
 1. [おわりに](#おわりに)
 
-## グリッドレイアウト
+## 入室ユーザー登録
 
-ユーザーが選択したカードをプレイエリアに表示する機能を作っていきます。
+入室したユーザーの一覧を管理するために、ルームに入室したときにFirestoreに登録する処理を作成する。
 
-プレイエリア周辺に(テーブルを囲うように)ユーザーの表示エリアがあったほうがかっこいい気がしますが、今回は勉強(と手間)を考慮してグリッドレイアウトでただカードを並べるだけの機能を作ってみます。
-
-ということで、[Ionicのドキュメント](https://ionicframework.com/jp/docs/layout/grid)を参考に作っていきます。
-
-`src\app\poker\room\room.page.html`を以下のように編集する。
+Firebaseへの登録には共通モジュールの`FirestoreService`を利用していたので、まずユーザーの取得と登録する処理を作成する。
+`src/app/shared/firestore.service.ts`
 
 ```diff
--        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-+        <!-- カード表示エリア -->
-+        <ion-grid>
-+          <ion-row>
-+            <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]"  size-lg="2" size-md="3" size-sm="2" size="3">
-+              <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-+            </ion-col>
-+          </ion-row>
-+        </ion-grid>
-```
-
-するとこんな感じになります。
-
-![グリッド表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/grid.png)
-
-`[1,1,1,1,1,1,1,1,1]`は9枚のカードを表示するために適用に書いているだけなので気にしないでください。
-
-メインは`size-lg="2" size-md="3" size-sm="2" size="3"`です。
-`size`はBootstrapの`col`に相当する、といえば伝わるでしょうか？
-表示領域を12分割したうちのいくつ領域を使用するかを設定することができます。
-`-xx`はそれぞれのウィンドウ(表示領域ではなく)サイズに応じてsizeを指定することができるようになります。これによって、ウィンドウの幅に応じてカードの表示枚数を変更することができます。
-
-今回だと、基本は1行4枚表示していて、576px(-sm)以上になると6枚、768px(-md)以上だとチャットエリアが常時表示されるので4枚に戻して、992px(-lg)以上ではまた広くなるので6枚表示に変える、という設定になっています。
-
-## ユーザー情報を載せる
-
-これでカードを並べることができましたが、このままだとどのカードが誰のカードかわからないので、ユーザー名を表示するようにしてみます。
-
-カードコンポーネントに持たせるつもりで変数を用意してましたが、カートの下に名前を表示したくなったので、そちらの変数は今回利用しないことにします。
-
-それでは以下のようにユーザー名を配置しましょう。
-
-```diff
-           <ion-row>
-             <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]" size-lg="2" size-md="3" size-sm="2" size="3">
-               <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-+              <!-- ユーザー名 -->
-+              <div color="primary" class="ion-text-center text-ellipse">uname</div>
-             </ion-col>```
-```
-長い名前は省略表示して表示したいので、CSSを追加します。
-`src/app/poker/room/room.page.scss`
-
-```diff
-+
-+.text-ellipse {
-+  overflow: hidden;
-+  text-overflow: ellipsis;
-+  white-space: nowrap;
+・・・
++// 入室メンバーのステータス
++export interface IRoomUser {
++  id: string;
++  name: string;
++  card: string;
++  enterDate: Date;
 +}
+・・・
++  // ユーザー情報の取得
++  roomUserInit(roomId: string, uid: string): Promise<IRoomUser> {
++    return this.roomCollection.doc<IRoomUser>(roomId + '/users/' + uid)     
++      .valueChanges()
++      .pipe(first())
++      .toPromise(Promise);
++  }
++  // 入室ユーザー情報の登録
++  roomUserSet(roomId: string, user: IRoomUser): Promise<void> {
++    return this.roomCollection.doc<IRoomUser>(roomId + '/users/' + user.id).set(user);
++  }
+・・・
 ```
 
-こうすると以下のようになります。
+作成できたので、これを使って登録する処理を作成しましょう。
+`src/app/poker/room/room.page.ts`
 
-![ユーザー名追加](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/add-user-name.png)
+```diff
+・・・
+-import { FirestoreService, IUser } from 'src/app/shared/firestore.service';
++import { FirestoreService, IRoomUser } from 'src/app/shared/firestore.service';
+・・・
+-  user: IUser;
++  user: IRoomUser;
+・・・
+   // ユーザ情報を取得
+   async ionViewWillEnter() {
+     this.uid = this.auth.getUserId();
+-    this.user = await this.firestore.userInit(this.uid);
++    // ユーザーを取得(すでに存在する場合に取得できる)
++    this.user = await this.firestore.roomUserInit(this.roomId, this.uid);   
++    // ユーザーが存在しない場合は登録する
++    if (!this.user) {
++      const user = await this.firestore.userInit( this.auth.getUserId() );  
++      this.user = {
++        id: this.uid,
++        name: user.displayName,
++        card: null,
++        enterDate: new Date(), // 入室日時を格納
++      };
++      this.firestore.roomUserSet(this.roomId, this.user);
++    }
+・・・
+```
 
-※footerのカードが中央に来ているのはカードコンポーネントのスタイルを変更しているからです。(ウィンドウサイズを変更すると左に寄っていたので)
+これで実際に「検証用1」ルームに入って見ると以下のようになりました。
+よさそうですね。
 
-背景とか文字色とか変更したほうがいいのでしょうけど、めんどいので今回はこれで行きます。
+![ユーザー情報の登録](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/user-set.png)
 
-これでプレイエリアの見た目は大体固まりました！やったね！
+## カード提出機能
 
-## 手札配置
+無事入室できるようになったので、カードを提出できるようにしていきます。
+先ほど、ユーザ情報を更新する処理を作成しており、ユーザー情報内にカード情報があるので、roomのほうで関数を作り、クリックイベントで呼び出せば完了です。
+`src/app/poker/room/room.page.ts`
 
-最後にサクッと手札をfooterに追加しておきましょう。
+```diff
++   // カード情報を更新
++  async updateCard(num: string) {
++    this.user.card = num;
++    this.firestore.roomUserSet(this.roomId, this.user);
++  }
+```
+
 `src/app/poker/room/room.page.html`
 ```diff
-       <ion-footer>
--        <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-+        <div scrollX="true" class="hand-area">
-+          <app-poker-card class="hand-card" userName="uname" number="{{num}}" userColor="primary" [isOpen]="true"  *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?']"></app-poker-card>     
-+        </div>
-       </ion-footer>
+-          <app-poker-card class="hand-card" userName="uname" number="{{num}}" userColor="primary" [isOpen]="true"  *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?']"></app-poker-card>     
++          <app-poker-card class="hand-card" [number]="num" userColor="primary" [isOpen]="true"
++            *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?', null]" (click)="updateCard(num)">
++          </app-poker-card>
 ```
 
-手札を横に並べてスクロールできるようにCSSを記載します。
-`src/app/poker/room/room.page.scss`
+ほい、これで選択したカードの情報を管理できるようになりました。
+クリックすると以下のように`card`が選択した数値(の文字列)になります。
+
+![カード情報の更新](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/update-card.png)
+
+## 提出カード一覧表示
+
+カード選択できるようになったので、選択したカードを表示できるようにしましょう。
+
+まずはおなじみFirestoreからユーザーリストを持ってきます。
+`src/app/poker/room/room.page.ts`
 
 ```diff
-+.hand-area {
-+  height: 120px;
-+  display: flex;
-+  display: -webkit-flex;
-+
-+  .hand-card {
-+    float: left;
-+    margin: 5px;
+・・・
++  // ルームにいるユーザー一覧の取得(変更をリアルタイムに受けるためObservable)
++  roomUserListInit(roomId: string): Observable<IRoomUser[]> {
++    return this.roomCollection.doc(roomId)
++      .collection<IRoomUser>('users', ref => ref.orderBy('enterDate', 'desc'))
++      .valueChanges();
 +  }
-+}
-+
-+// 今回はXだけあればいいけど、両方定義しておく
-+div[scrollx=true],div[scrolly=true] {
-+  position: relative;
-+  overflow: hidden;
-+}
-+
-+div[scrollx=true] {
-+  overflow-x: auto;
-+}
-+
-+div[scrolly=true] {
-+  overflow-y: auto;
-+}
+・・・
 ```
 
-こんな感じになります。
-![プレイエリア](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-21/images/playarea.png)
+それをroom側で保持します。
+`src/app/poker/room/room.page.ts`
+
+```diff
+・・・
++import { Observable } from 'rxjs';
+・・・
++  users: Observable<IRoomUser[]>;
+・・・
+  // ユーザ情報を取得
+  async ionViewWillEnter() {
+・・・
++    // ルームのユーザーリストの取得
++    this.users = this.firestore.roomUserListInit(this.roomId);
+・・・
+```
+
+そして画面側から参照します。
+`src/app/poker/room/room.page.html`
+```diff
+           <ion-row>
+-            <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]" size-lg="2" size-md="3" size-sm="2" size="3">
+-              <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
++            <ion-col *ngFor="let u of users | async; trackBy: trackByFn" size-lg="2" size-md="3" size-sm="2" size="3">
++              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="u.id === user.id"></app-poker-card>
+               <!-- ユーザー名 -->
+-              <div color="primary" class="ion-text-center text-ellipse">uname</div>
++              <div color="primary" class="ion-text-center text-ellipse">{{u.name}}</div>
+             </ion-col>
+           </ion-row>
+```
+※このままだとカードの背景色がplaymatと同色になるので、`this.frontStyle`に`backgroundColor: 'white'`を追加しています。
+
+これでカードが表示されるようになりました。
+
+![カード情報の表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/show-card.png)
+
+## 他ユーザーの表示非表示
+
+最後にカードの表示非表示を切り替える機能を実装します。
+
+まず、Room情報に表示非表示状態を持たせてRoom情報を保持するようにします。また、表示非表示の切り替えの処理も持たせておく。
+`src/app/shared/firestore.service.ts`
+```diff
+・・・
+ export interface IRoomInfo {
+   roomName: string;
+   createDate: number;
++  cardOpen: boolean;
+ }
+・・・
++  // ルーム情報を取得
++  roomInfoInit(roomId: string): Observable<IRoomInfo> {
++    return this.roomCollection.doc<IRoomInfo>(roomId).valueChanges();       
++  }
++  // ルーム情報を更新する
++  roomInfoSet(roomId: string, roomInfo: IRoomInfo) {
++    this.roomCollection.doc<IRoomInfo>(roomId).set(roomInfo);
++  }
+・・・
+```
+
+`src/app/poker/room/room.page.ts`
+```diff
+・・・
+-import { FirestoreService, IRoomUser } from 'src/app/shared/firestore.service';
++import { FirestoreService, IRoomUser, IRoomInfo } from 'src/app/shared/firestore.service';
+ import { AlertController, NavController } from '@ionic/angular';
+ import { Observable } from 'rxjs';
++import { map, first } from 'rxjs/operators';
+・・・
++  roomInfo: IRoomInfo;
++  cardOpen: Observable<boolean>;
+・・・
++  // 表示カードを開く
++  async openCard() {
++    this.roomInfo.cardOpen = true;
++    this.firestore.roomInfoSet(this.roomId, this.roomInfo);
++  }
++  // 表示カードを伏せる
++  async closeCard() {
++    this.roomInfo.cardOpen = false;
++    this.firestore.roomInfoSet(this.roomId, this.roomInfo);
++  }
+・・・
+   // ユーザ情報を取得
+   async ionViewWillEnter() {
+・・・
++    // ルーム情報を取得
++    const info = this.firestore.roomInfoInit(this.roomId)
++    // カードの表示情報のバインディングのためにObservableで取得
++    this.cardOpen = info.pipe( map(inf => inf.cardOpen) );
++    // こちらは更新用に固定値でよいのでIRoomInfoオブジェクトを取得
++    this.roomInfo = await info.pipe(first()).toPromise(Promise);・・・
+```
+
+この時、roomInfoの情報を取得するのにとても手間取りました。
+`.pipe(first())`を付けていなかったことが原因でした。
+おそらく`.valueChanges()`関数の中では、対象が一つでもリストなどのコレクションとして所持しており、`.first()`で1つだけ取得しないといけなかったんだろうなと思っています。
+
+次に、画面側で反映できるように修正します。また、切り替えのボタンを表示します。
+
+`src/app/poker/room/room.page.html`
+```diff
+-              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="u.id === user.id"></app-poker-card>
++              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="(cardOpen | async) || u.id === user.id"></app-poker-card>
+・・・
++        <ion-button (click)="openCard()">Open</ion-button>
++        <ion-button (click)="closeCard()">Close</ion-button>
+```
+
+本当にボタンは置いただけです。これでこのような見た目になるはず！
+
+![他ユーザーのカード表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/other-user.png)
 
 ## おわりに
 
-Responsive Gridの実装に詰まったのとプライベートが忙しくなったのが影響して途中で止まってましたが、やっと続きができました。
+ボタン配置がすげー適当ですが、何とかプランニングポーカーはできるようにな...ったと思います！あとはチャット機能の実装ができれば今回の目標達成となります！もう少し！
 
-今回の休み中に一気に進めたいなぁ、と思ってます。
-次の項目は、プランニングポーカーのゲーム部分を進めていきたいですね。
+次回はチャット機能の実装を進めていきます！
 
 # アドベントカレンダー
 
@@ -167,7 +275,7 @@ Responsive Gridの実装に詰まったのとプライベートが忙しくな�
 |12/19|[カスタムコンポーネントでトランプのテンプレートを作成する](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-19)|
 |12/20|[プレイルームのレイアウト](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-20)|
 |12/21(02/22)|[カードプレイエリア](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-21)|
-|12/22|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-22)|
+|12/22|[カード提出機能](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-22)|
 |12/23|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-23)|
 |12/24|[未定](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-24)|
 |12/25|[終わってみて？](https://github.com/yosshi-4989/advent_calender_2019/tree/2019-12-25)|
