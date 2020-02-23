@@ -4,252 +4,176 @@
 
 なんか悔しいけど、やってみたい欲はあるので1日遅れで初めます。
 
-# 本日のコンテキスト[カード提出機能]
+# 本日のコンテキスト[チャット]
 
-再開して2日目！<br>
-アドベントカレンダー全部俺2019...をやりたかった、の21日目です。
-<br>今日は提出カード情報をFirebaseに登録する処理を作成していきます。
+再開3日目！<br>
+アドベントカレンダー全部俺2019...をやりたかった、の22日目です。
+<br>今日はチャット機能を作っていきます。とりあえずチャットだけ。
 
 ## 目次
 
-1. [入室ユーザー登録](#入室ユーザー登録)
-1. [カード提出機能]](#カード提出機能)
-1. [提出カード一覧表示](#提出カード一覧表示)
-1. [他ユーザーの表示非表示](#他ユーザーの表示非表示)
+1. [メッセージ送信機能](#メッセージ送信機能)
+1. [メッセージ受信機能](#メッセージ受信機能)
+1. [見た目の修正](#見た目の修正)
 1. [おわりに](#おわりに)
 
-## 入室ユーザー登録
 
-入室したユーザーの一覧を管理するために、ルームに入室したときにFirestoreに登録する処理を作成する。
+## メッセージ受信機能
 
-Firebaseへの登録には共通モジュールの`FirestoreService`を利用していたので、まずユーザーの取得と登録する処理を作成する。
-`src/app/shared/firestore.service.ts`
+今回はまずは表示する機能から作成して見ます。
+いつものようにFirestoreのコレクションからアイテムを取得する関数を実装します。
+``
 
 ```diff
 ・・・
-+// 入室メンバーのステータス
-+export interface IRoomUser {
-+  id: string;
-+  name: string;
+-import { first } from 'rxjs/operators';
++import { first, concatMap } from 'rxjs/operators';
+・・・
++export interface IMessage {
++  uid: string;
 +  card: string;
-+  enterDate: Date;
++  message: string;
++  timestamp: number;
 +}
+
++export interface IChat extends IUser, IMessage { }
 ・・・
-+  // ユーザー情報の取得
-+  roomUserInit(roomId: string, uid: string): Promise<IRoomUser> {
-+    return this.roomCollection.doc<IRoomUser>(roomId + '/users/' + uid)     
-+      .valueChanges()
-+      .pipe(first())
-+      .toPromise(Promise);
-+  }
-+  // 入室ユーザー情報の登録
-+  roomUserSet(roomId: string, user: IRoomUser): Promise<void> {
-+    return this.roomCollection.doc<IRoomUser>(roomId + '/users/' + user.id).set(user);
-+  }
-・・・
-```
-
-作成できたので、これを使って登録する処理を作成しましょう。
-`src/app/poker/room/room.page.ts`
-
-```diff
-・・・
--import { FirestoreService, IUser } from 'src/app/shared/firestore.service';
-+import { FirestoreService, IRoomUser } from 'src/app/shared/firestore.service';
-・・・
--  user: IUser;
-+  user: IRoomUser;
-・・・
-   // ユーザ情報を取得
-   async ionViewWillEnter() {
-     this.uid = this.auth.getUserId();
--    this.user = await this.firestore.userInit(this.uid);
-+    // ユーザーを取得(すでに存在する場合に取得できる)
-+    this.user = await this.firestore.roomUserInit(this.roomId, this.uid);   
-+    // ユーザーが存在しない場合は登録する
-+    if (!this.user) {
-+      const user = await this.firestore.userInit( this.auth.getUserId() );  
-+      this.user = {
-+        id: this.uid,
-+        name: user.displayName,
-+        card: null,
-+        enterDate: new Date(), // 入室日時を格納
-+      };
-+      this.firestore.roomUserSet(this.roomId, this.user);
-+    }
-・・・
-```
-
-これで実際に「検証用1」ルームに入って見ると以下のようになりました。
-よさそうですね。
-
-![ユーザー情報の登録](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/user-set.png)
-
-## カード提出機能
-
-無事入室できるようになったので、カードを提出できるようにしていきます。
-先ほど、ユーザ情報を更新する処理を作成しており、ユーザー情報内にカード情報があるので、roomのほうで関数を作り、クリックイベントで呼び出せば完了です。
-`src/app/poker/room/room.page.ts`
-
-```diff
-+   // カード情報を更新
-+  async updateCard(num: string) {
-+    this.user.card = num;
-+    this.firestore.roomUserSet(this.roomId, this.user);
-+  }
-```
-
-`src/app/poker/room/room.page.html`
-```diff
--          <app-poker-card class="hand-card" userName="uname" number="{{num}}" userColor="primary" [isOpen]="true"  *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?']"></app-poker-card>     
-+          <app-poker-card class="hand-card" [number]="num" userColor="primary" [isOpen]="true"
-+            *ngFor="let num of ['0', '1/2', '1', '2', '3', '5', '8', '13', '20', '40', '100', '∞', '?', null]" (click)="updateCard(num)">
-+          </app-poker-card>
-```
-
-ほい、これで選択したカードの情報を管理できるようになりました。
-クリックすると以下のように`card`が選択した数値(の文字列)になります。
-
-![カード情報の更新](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/update-card.png)
-
-## 提出カード一覧表示
-
-カード選択できるようになったので、選択したカードを表示できるようにしましょう。
-
-まずはおなじみFirestoreからユーザーリストを持ってきます。
-`src/app/poker/room/room.page.ts`
-
-```diff
-・・・
-+  // ルームにいるユーザー一覧の取得(変更をリアルタイムに受けるためObservable)
-+  roomUserListInit(roomId: string): Observable<IRoomUser[]> {
++  // チャットメッセージの取得
++  messageInit(roomId: string): Observable<IChat[]> {
 +    return this.roomCollection.doc(roomId)
-+      .collection<IRoomUser>('users', ref => ref.orderBy('enterDate', 'desc'))
-+      .valueChanges();
++      .collection<IMessage>('messages', ref => ref.orderBy('timestamp', 'asc'))
++      .valueChanges({idField: 'mid'}).pipe(
++        concatMap(async messages => {
++          const users = await this.af.collection<IUser>('users')
++            .valueChanges( {idField: 'uid'} ).pipe(first()).toPromise(Promise);
++          return messages.map(message => {
++            const user = users.find(u => u.uid === message.uid);
++            return Object.assign(message, user);
++          });
++        })
++      );
 +  }
 ・・・
 ```
 
-それをroom側で保持します。
-`src/app/poker/room/room.page.ts`
+これをroomから呼び出します。
 
 ```diff
 ・・・
-+import { Observable } from 'rxjs';
+-import { FirestoreService, IRoomUser, IRoomInfo } from 'src/app/shared/firestore.service';
++import { FirestoreService, IRoomUser, IRoomInfo, IChat } from 'src/app/shared/firestore.service';
 ・・・
-+  users: Observable<IRoomUser[]>;
-・・・
-  // ユーザ情報を取得
-  async ionViewWillEnter() {
-・・・
-+    // ルームのユーザーリストの取得
-+    this.users = this.firestore.roomUserListInit(this.roomId);
-・・・
-```
-
-そして画面側から参照します。
-`src/app/poker/room/room.page.html`
-```diff
-           <ion-row>
--            <ion-col *ngFor="let i of [1,1,1,1,1,1,1,1,1]" size-lg="2" size-md="3" size-sm="2" size="3">
--              <app-poker-card userName="uname" number="1" userColor="primary" [isOpen]="false"></app-poker-card>
-+            <ion-col *ngFor="let u of users | async; trackBy: trackByFn" size-lg="2" size-md="3" size-sm="2" size="3">
-+              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="u.id === user.id"></app-poker-card>
-               <!-- ユーザー名 -->
--              <div color="primary" class="ion-text-center text-ellipse">uname</div>
-+              <div color="primary" class="ion-text-center text-ellipse">{{u.name}}</div>
-             </ion-col>
-           </ion-row>
-```
-※このままだとカードの背景色がplaymatと同色になるので、`this.frontStyle`に`backgroundColor: 'white'`を追加しています。
-
-これでカードが表示されるようになりました。
-
-![カード情報の表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/show-card.png)
-
-## 他ユーザーの表示非表示
-
-最後にカードの表示非表示を切り替える機能を実装します。
-
-まず、Room情報に表示非表示状態を持たせてRoom情報を保持するようにします。また、表示非表示の切り替えの処理も持たせておく。
-`src/app/shared/firestore.service.ts`
-```diff
-・・・
- export interface IRoomInfo {
-   roomName: string;
-   createDate: number;
-+  cardOpen: boolean;
- }
-・・・
-+  // ルーム情報を取得
-+  roomInfoInit(roomId: string): Observable<IRoomInfo> {
-+    return this.roomCollection.doc<IRoomInfo>(roomId).valueChanges();       
-+  }
-+  // ルーム情報を更新する
-+  roomInfoSet(roomId: string, roomInfo: IRoomInfo) {
-+    this.roomCollection.doc<IRoomInfo>(roomId).set(roomInfo);
-+  }
-・・・
-```
-
-`src/app/poker/room/room.page.ts`
-```diff
-・・・
--import { FirestoreService, IRoomUser } from 'src/app/shared/firestore.service';
-+import { FirestoreService, IRoomUser, IRoomInfo } from 'src/app/shared/firestore.service';
- import { AlertController, NavController } from '@ionic/angular';
- import { Observable } from 'rxjs';
-+import { map, first } from 'rxjs/operators';
-・・・
-+  roomInfo: IRoomInfo;
-+  cardOpen: Observable<boolean>;
-・・・
-+  // 表示カードを開く
-+  async openCard() {
-+    this.roomInfo.cardOpen = true;
-+    this.firestore.roomInfoSet(this.roomId, this.roomInfo);
-+  }
-+  // 表示カードを伏せる
-+  async closeCard() {
-+    this.roomInfo.cardOpen = false;
-+    this.firestore.roomInfoSet(this.roomId, this.roomInfo);
-+  }
++  messages: Observable<IChat[]>;
 ・・・
    // ユーザ情報を取得
    async ionViewWillEnter() {
 ・・・
-+    // ルーム情報を取得
-+    const info = this.firestore.roomInfoInit(this.roomId)
-+    // カードの表示情報のバインディングのためにObservableで取得
-+    this.cardOpen = info.pipe( map(inf => inf.cardOpen) );
-+    // こちらは更新用に固定値でよいのでIRoomInfoオブジェクトを取得
-+    this.roomInfo = await info.pipe(first()).toPromise(Promise);・・・
-```
-
-この時、roomInfoの情報を取得するのにとても手間取りました。
-`.pipe(first())`を付けていなかったことが原因でした。
-おそらく`.valueChanges()`関数の中では、対象が一つでもリストなどのコレクションとして所持しており、`.first()`で1つだけ取得しないといけなかったんだろうなと思っています。
-
-次に、画面側で反映できるように修正します。また、切り替えのボタンを表示します。
-
-`src/app/poker/room/room.page.html`
-```diff
--              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="u.id === user.id"></app-poker-card>
-+              <app-poker-card [number]="u.card" userColor="primary" [isOpen]="(cardOpen | async) || u.id === user.id"></app-poker-card>
++    // チャット欄のメッセージ一覧
++    this.messages = this.firestore.messageInit(this.roomId);
 ・・・
-+        <ion-button (click)="openCard()">Open</ion-button>
-+        <ion-button (click)="closeCard()">Close</ion-button>
++  trackByFnForMsg(index, msg) {
++    return msg.mid;
++  }
+・・・
 ```
 
-本当にボタンは置いただけです。これでこのような見た目になるはず！
+最後に画面に描画します。
 
-![他ユーザーのカード表示](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-22/images/other-user.png)
+```diff
+・・・
+     <!--  チャットエリア  -->
+     <ion-menu menuId="chat" contentId="playarea" side="end" class="custom-menu">
+       <ion-content>
++        <ion-list class="ion-padding-top">
++          <ion-item lines="none" *ngFor="let m of messages | async; trackBy: trackByFnForMsg">
++            </ion-avatar>
++            <ion-label class="ion-padding ion-text-wrap" style="background-color: var(--ion-color-light-tint); border-radius: 12px;"
++              [class.ion-margin-end]="m.uid !== uid" [class.ion-margin-start]="m.uid === uid">
++              <div class="ion-text-nowrap"><strong>{{m.displayName}}</strong>: <strong color="primary">{{m.card}}</strong></div>
++              {{m.message}}
++            </ion-label>
++          </ion-item>
++        </ion-list>
+       </ion-content>
+・・・
+```
+
+Firestoreに直接データを入力して動作確認すると以下のようになりました。
+
+![チャット一覧](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-23/images/show-chat.png)
+
+## メッセージ送信機能
+
+メッセージ送信を作っていきます。
+
+まずは送信するUIの作成です。
+HTMLのテキストエリアを配置していた場所を変更して、メッセージを格納する変数と送信する関数を作成します。。
+
+```diff
+       <ion-footer>
+-        <ion-textarea placeholder="Text Area"></ion-textarea>
++        <form #f=ngForm>
++          <ion-textarea class="ion-margin-start" autoGrow="true" rows="1" placeholder="メッセージ" [(ngModel)]="message" name="message" required></ion-textarea>
++          <ion-button fill="clear" size="small" (click)="postMessage()" [disabled]="!f.form.valid">送信</ion-button>
++        </form>
+       </ion-footer>
+     </ion-menu>
+```
+
+```diff
+-import { Component, OnInit } from '@angular/core';
++import { Component, OnInit, ViewChild } from '@angular/core';
+ import { ActivatedRoute, ParamMap } from '@angular/router';
+ import { AuthService } from 'src/app/auth/auth.service';
+-import { FirestoreService, IRoomUser, IRoomInfo } from 'src/app/shared/firestore.service';
+-import { AlertController, NavController } from '@ionic/angular';
++import { FirestoreService, IRoomUser, IRoomInfo, IChat } from 'src/app/shared/firestore.service';
++import { AlertController, NavController, IonContent } from '@ionic/angular'; import { Observable } from 'rxjs';
+ import { map, first } from 'rxjs/operators';
+・・・
++  message: string;
++
++  @ViewChild(IonContent, { static: true})
++  content: IonContent;
+・・・
++  // メッセージ送信
++  postMessage() {
++    if (!this.user) {
++      alert('ユーザー情報がありません。');
++      return;
++    }
++    this.firestore.messageAdd(this.roomId, {
++      uid: this.uid,
++      card: this.user.card,
++      message: this.message,
++      timestamp: Date.now(),
++    });
++    this.message = '';
++    this.content.scrollToBottom(100);
++  }
+```
+
+そしていつものようにメッセージのinterfaceを作成し、Firestoreにメッセージを追加します。
+
+```diff
++  // チャットメッセージの追加
++  messageAdd(roomId: string, message: IMessage) {
++    return this.roomCollection.doc(roomId).collection<IMessage>('messages').add(message);
++  }
+```
+
+これでチャット機能終わりです！
+見た目はこんな感じ！機能だけなので見た目は勘弁！
+
+![チャット画面UI](https://github.com/yosshi-4989/advent_calender_2019/blob/master/advent_calendar/12-23/images/send-msg.png)
 
 ## おわりに
 
-ボタン配置がすげー適当ですが、何とかプランニングポーカーはできるようにな...ったと思います！あとはチャット機能の実装ができれば今回の目標達成となります！もう少し！
+やったー！とりあえず、機能面だけで言えば最低限のものができたと思います！
 
-次回はチャット機能の実装を進めていきます！
+ここからはちょこちょこ機能を追加する感じのことをしていこうかなと思っています。
+
+次は何かな。チャットにタイトル・非表示中はチャットのナンバーを非表示にする・表示中はカード変更不可・非ログイン中のユーザーのdisable化、などなどやりたいことはあるので、何かをまとめてみようと思います。
 
 # アドベントカレンダー
 
